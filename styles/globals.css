@@ -1,0 +1,208 @@
+/* Updated globals.css with enhanced slow animated scrolling */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Enhanced slow animated scrolling */
+@layer base {
+  html {
+    scroll-behavior: smooth !important;
+    scroll-padding-top: 80px;
+    /* Slower scroll timing for webkit browsers */
+    -webkit-scroll-behavior: smooth;
+  }
+  
+  * {
+    scroll-behavior: smooth !important;
+  }
+  
+  body {
+    scroll-behavior: smooth !important;
+    /* Enhanced scrolling performance */
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+  }
+}
+
+/* Custom slow scroll animation using CSS transitions */
+html {
+  scroll-behavior: smooth !important;
+  /* For browsers that support scroll-behavior-duration (experimental) */
+  scroll-behavior-duration: 1.5s;
+}
+
+/* Alternative approach for very slow scrolling */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth !important;
+  }
+  
+  /* Custom easing for smoother experience */
+  * {
+    transition: scroll-position 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  html, * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
+
+/* Custom gold color variables */
+:root {
+  --gold-400: #fbbf24;
+  --gold-300: #ab8846;
+  --gold-500: #ab8846;
+  --scroll-duration: 1500ms; /* Custom scroll duration variable */
+}
+
+/* Gold color utilities for Tailwind */
+.text-gold-400 {
+  color: var(--gold-400);
+}
+
+.text-gold-300 {
+  color: var(--gold-300);
+}
+
+.bg-gold-400 {
+  background-color: var(--gold-400);
+}
+
+.bg-gold-300 {
+  background-color: var(--gold-300);
+}
+
+.border-gold-400 {
+  border-color: var(--gold-400);
+}
+
+.hover\:bg-gold-400:hover {
+  background-color: var(--gold-400);
+}
+
+.hover\:bg-gold-300:hover {
+  background-color: var(--gold-300);
+}
+
+.hover\:text-gold-400:hover {
+  color: var(--gold-400);
+}
+
+.hover\:text-gold-300:hover {
+  color: var(--gold-300);
+}
+
+.focus\:ring-gold-400:focus {
+  --tw-ring-color: var(--gold-400);
+}
+
+/* Ensure sections have proper spacing from fixed header */
+section {
+  scroll-margin-top: 80px;
+  /* Add smooth transitions for section reveals */
+  transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out;
+}
+
+/* Slow scroll utility classes */
+.scroll-slow {
+  scroll-behavior: smooth;
+  transition: scroll-position 2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.scroll-very-slow {
+  scroll-behavior: smooth;
+  transition: scroll-position 3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+/* Enhanced smooth scrolling for anchor links */
+a[href^="#"] {
+  transition: all 0.3s ease;
+}
+
+a[href^="#"]:hover {
+  transform: translateY(-2px);
+}
+
+/* Animation for mobile menu */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-menu {
+  animation: slideDown 0.3s ease-out;
+}
+
+/* Custom scroll animation keyframes for manual control */
+@keyframes slowScroll {
+  0% {
+    scroll-behavior: auto;
+  }
+  100% {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Intersection observer animation classes for scroll-triggered content */
+.fade-in-on-scroll {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.fade-in-on-scroll.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.slide-in-left {
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: opacity 1s ease-out, transform 1s ease-out;
+}
+
+.slide-in-left.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.slide-in-right {
+  opacity: 0;
+  transform: translateX(50px);
+  transition: opacity 1s ease-out, transform 1s ease-out;
+}
+
+.slide-in-right.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Smooth scrollbar styling (webkit browsers) */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--gold-400), var(--gold-300));
+  border-radius: 6px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, var(--gold-500), var(--gold-400));
+}
