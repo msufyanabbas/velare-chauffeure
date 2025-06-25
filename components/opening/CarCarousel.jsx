@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Car, Crown, Truck, Users, Bus } from 'lucide-react';
 
 const CarCarousel = ({ onNext }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -9,39 +10,39 @@ const CarCarousel = ({ onNext }) => {
     {
       type: 'luxury_sedan',
       name: 'Luxury Sedans',
-      icon: '🚗',
+      icon: Car,
       description: 'Comfortable and elegant for business trips',
-      capacity: '1-4 passengers',
-    },
-    {
-      type: 'suv',
-      name: 'SUV',
-      icon: '🚙',
-      description: 'Spacious and luxurious for family travels',
-      capacity: '1-6 passengers',
+      capacity: '1-3 passengers',
     },
     {
       type: 'premium_luxury_sedan',
       name: 'Premium Luxury Sedans',
-      icon: '🚐',
+      icon: Crown,
       description: 'Ultimate luxury for special occasions',
-      capacity: '1-8 passengers',
+      capacity: '1-3 passengers',
     },
     {
-      type: 'people_mover_11_seater',
-      name: 'People mover 11 seater',
-      icon: '🚌',
-      description: 'Perfect for group transportation',
-      capacity: '8-11 passengers',
+      type: 'suv',
+      name: 'SUV',
+      icon: Truck,
+      description: 'Spacious and luxurious for family travels',
+      capacity: '1-3 passengers',
     },
     {
       type: '7_seater',
       name: '7 seater',
-      icon: '🚗',
+      icon: Users,
       description: 'Ideal for medium groups',
       capacity: '5-7 passengers',
     },
-  ];
+    {
+      type: 'people_mover_11_seater',
+      name: 'People mover 11 seater',
+      icon: Bus,
+      description: 'Perfect for group transportation',
+      capacity: '8-11 passengers',
+    },
+];
 
   // Auto-rotation
   useEffect(() => {
@@ -111,6 +112,8 @@ const CarCarousel = ({ onNext }) => {
             const opacity = isActive ? 1 : Math.max(0.3, 1 - Math.abs(index - activeIndex) * 0.25);
             const zIndex = isActive ? 30 : 20 - Math.abs(index - activeIndex);
 
+            const IconComponent = car.icon;
+
             return (
               <div
                 key={car.type}
@@ -137,7 +140,7 @@ const CarCarousel = ({ onNext }) => {
                 )}
 
                 <div className="text-6xl mb-4 transform transition-transform duration-300 hover:scale-110">
-                  {car.icon}
+                  <IconComponent size={64} className="text-yellow-500" />
                 </div>
 
                 <div className="text-center px-4">

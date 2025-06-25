@@ -20,13 +20,13 @@ const CheckoutForm = ({ bookingData, priceData, onSuccess, onError }) => {
   const [clientSecret, setClientSecret] = useState('');
 
   useEffect(() => {
-    // Create payment intent when component mounts
+    // Create payment intent for pre-authorization
     createPaymentIntent();
   }, []);
 
   const createPaymentIntent = async () => {
     try {
-      const response = await fetch('/api/payment/create-intent', {
+      const response = await fetch('/api/payment/create-preauth-intent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -34,6 +34,8 @@ const CheckoutForm = ({ bookingData, priceData, onSuccess, onError }) => {
         body: JSON.stringify({
           amount: priceData.totalPrice,
           bookingId: bookingData.bookingId,
+          // Pre-authorization specific parameters
+          capture_method: 'manual', // This is key for holding the payment
         }),
       });
 
@@ -44,69 +46,94 @@ const CheckoutForm = ({ bookingData, priceData, onSuccess, onError }) => {
     }
   };
 
-const handleSubmit = async (event) => {
-  event.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-  if (!stripe || !elements) {
-    return;
-  }
+    if (!stripe || !elements) {
+      return;
+    }
 
-  setIsLoading(true);
-  setPaymentError(null);
+    setIsLoading(true);
+    setPaymentError(null);
 
-  const cardElement = elements.getElement(CardElement);
+    const cardElement = elements.getElement(CardElement);
 
-  try {
-    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card: cardElement,
-        billing_details: {
-          name: bookingData.email.split('@')[0],
-          email: bookingData.email,
-          phone: bookingData.phoneNumber,
+    try {
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name: bookingData.email.split('@')[0],
+            email: bookingData.email,
+            phone: bookingData.phoneNumber,
+          },
         },
-      },
-    });
+      });
 
-    if (error) {
-      setPaymentError(error.message);
-    } else if (paymentIntent.status === 'succeeded') {
-      console.log('booking is ', bookingData);
-      // Create booking in database with correct price structure
-      const bookingResponse = await fetch('/api/booking/create', {
+      if (error) {
+        setPaymentError(error.message);
+      } else if (paymentIntent.status === 'requires_capture') {
+        // Payment is held, now create booking with pre-auth status
+        console.log('Payment pre-authorized for booking:', bookingData);
+        
+        const bookingResponse = await fetch('/api/booking/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...bookingData,
+            totalPrice: priceData.totalPrice,
+            basePrice: priceData.basePrice,
+            serviceCharges: priceData.serviceCharges,
+            paymentIntentId: paymentIntent.id,
+            paymentStatus: 'pre_authorized', // Track pre-auth status
+            paymentMethod: 'stripe_preauth',
+          }),
+        });
+
+        const bookingResult = await bookingResponse.json();
+        console.log('Booking created with pre-auth:', bookingResult);
+
+        if (bookingResult.success) {
+          // Send email with post-ride form link
+          await sendPostRideEmail(bookingResult.bookingId, paymentIntent.id);
+          
+          onSuccess({
+            paymentIntent,
+            bookingId: bookingResult.bookingId,
+            status: 'pre_authorized',
+          });
+        } else {
+          console.error('Booking creation failed:', bookingResult.error);
+          setPaymentError('Booking creation failed. Please contact support.');
+        }
+      }
+    } catch (error) {
+      console.error('Payment pre-authorization error:', error);
+      setPaymentError('Payment authorization failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const sendPostRideEmail = async (bookingId, paymentIntentId) => {
+    try {
+      await fetch('/api/email/send-post-ride-link', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...bookingData,
-          totalPrice: priceData.totalPrice, // Extract totalPrice correctly
-          basePrice: priceData.basePrice,   // Optional: include base price
-          serviceCharges: priceData.serviceCharges, // Optional: include service charges
-          paymentIntentId: paymentIntent.id,
+          bookingId,
+          paymentIntentId,
+          customerEmail: bookingData.email,
         }),
       });
-
-      const bookingResult = await bookingResponse.json();
-      console.log('booking result is ', bookingResult);
-
-      if (bookingResult.success) {
-        onSuccess({
-          paymentIntent,
-          bookingId: bookingResult.bookingId, // Updated to match typical response structure
-        });
-      } else {
-        console.error('Booking creation failed:', bookingResult.error);
-        setPaymentError('Booking creation failed. Please contact support.');
-      }
+    } catch (error) {
+      console.error('Failed to send post-ride email:', error);
     }
-  } catch (error) {
-    console.error('Payment error:', error);
-    setPaymentError('Payment failed. Please try again.');
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const cardElementOptions = {
     style: {
@@ -127,12 +154,19 @@ const handleSubmit = async (event) => {
   return (
     <div className="max-w-md mx-auto">
       <Card variant="luxury" className="p-6">
-        <h3 className="text-xl font-serif text-white mb-6">Payment Details</h3>
+        <h3 className="text-xl font-serif text-white mb-6">Authorize Payment</h3>
         
+        {/* Pre-authorization Notice */}
+        <div className="mb-6 p-4 bg-blue-900 bg-opacity-50 border border-blue-600 rounded-lg">
+          <p className="text-blue-200 text-sm">
+            💳 We'll authorize your card for the estimated amount. Final charges will be processed after your ride with any additional stops or services.
+          </p>
+        </div>
+
         {/* Payment Summary */}
         <div className="mb-6 p-4 bg-gray-900 rounded-lg">
           <div className="flex justify-between text-gray-300 mb-2">
-            <span>Subtotal:</span>
+            <span>Estimated Base Fare:</span>
             <span>{formatCurrency(priceData.basePrice)}</span>
           </div>
           {priceData.serviceCharges > 0 && (
@@ -143,10 +177,13 @@ const handleSubmit = async (event) => {
           )}
           <div className="border-t border-gray-700 pt-2">
             <div className="flex justify-between text-white font-semibold">
-              <span>Total:</span>
+              <span>Authorization Amount:</span>
               <span className="text-gold-400">{formatCurrency(priceData.totalPrice)}</span>
             </div>
           </div>
+          <p className="text-xs text-gray-400 mt-2">
+            *Additional charges for stops, waiting time, or extra services will be added after your ride
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -171,7 +208,7 @@ const handleSubmit = async (event) => {
             className="w-full"
             size="lg"
           >
-            {isLoading ? 'Processing...' : `Pay ${formatCurrency(priceData.totalPrice)}`}
+            {isLoading ? 'Authorizing...' : `Authorize ${formatCurrency(priceData.totalPrice)}`}
           </Button>
         </form>
 

@@ -31,8 +31,6 @@ export const sendConfirmationEmail = async (to, booking, type) => {
           <p><strong>Total:</strong> $${booking.totalPrice}</p>
         </div>
         
-        <p>Your chauffeur will arrive 15 minutes before the scheduled time. You will receive an SMS with the driver's details 1 hour before pickup.</p>
-        
         <p>If you need to make any changes or have questions, please contact us at info@velare.com or call +1 (555) 123-4567.</p>
         
         <p>Thank you for choosing Velaré.</p>

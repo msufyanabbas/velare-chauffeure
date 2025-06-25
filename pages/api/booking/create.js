@@ -19,7 +19,6 @@ export default async function handler(req, res) {
     // Create booking record
     const booking = new Booking({
       ...bookingData,
-      bookingId,
       status: 'pending',
       createdAt: new Date(),
     });

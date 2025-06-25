@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback} from 'react';
 import { 
   MapPin, 
   Calendar, 
@@ -9,7 +9,13 @@ import {
   MessageCircle,
   Car,
   Star,
-  Map
+  Map,
+  Search,
+  X,
+  Loader2,
+  ArrowRightLeft,
+  Plus,
+  Minus
 } from 'lucide-react';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
@@ -26,12 +32,17 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
     tripType: '',
     date: '',
     time: '',
+    // Round trip specific fields
+    returnDate: '',
+    returnTime: '',
     passengers: '1',
     extraServices: '',
     phoneNumber: '',
     email: '',
     specialRequests: ''
   });
+
+  const [isRoundTrip, setIsRoundTrip] = useState(false);
 
   // Enhanced useEffect to handle preSelectedVehicle changes
   useEffect(() => {
@@ -44,11 +55,49 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
     }
   }, [preSelectedVehicle, formData.vehicleType]);
 
+  // Update round trip state when trip type changes
+  useEffect(() => {
+    const newIsRoundTrip = formData.tripType === 'round-trip';
+    if (newIsRoundTrip !== isRoundTrip) {
+      setIsRoundTrip(newIsRoundTrip);
+      
+      // Clear return trip data if switching away from round trip
+      if (!newIsRoundTrip) {
+        setFormData(prev => ({
+          ...prev,
+          returnDate: '',
+          returnTime: ''
+        }));
+      }
+    }
+  }, [formData.tripType, isRoundTrip]);
+
   const [errors, setErrors] = useState({});
   const [locationPicker, setLocationPicker] = useState({
     isOpen: false,
     type: null
   });
+
+  // Enhanced search states with better focus handling
+  const [searchStates, setSearchStates] = useState({
+    pickup: {
+      isSearching: false,
+      results: [],
+      showResults: false,
+      hasSearched: false,
+      apiKeyError: false
+    },
+    dropoff: {
+      isSearching: false,
+      results: [],
+      showResults: false,
+      hasSearched: false,
+      apiKeyError: false
+    }
+  });
+
+  const searchTimeoutRef = useRef({});
+  const searchInputRefs = useRef({});
 
   const vehicleOptions = [
     { value: 'luxury_sedan', label: 'Luxury Sedans' },
@@ -91,6 +140,352 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
         ...prev,
         [field]: ''
       }));
+    }
+  };
+
+  // Swap pickup and dropoff locations
+  const swapLocations = () => {
+    setFormData(prev => ({
+      ...prev,
+      pickupAddress: prev.dropoffAddress,
+      dropoffAddress: prev.pickupAddress,
+      pickupLocation: prev.dropoffLocation,
+      dropoffLocation: prev.pickupLocation
+    }));
+
+    // Clear any errors for these fields
+    setErrors(prev => ({
+      ...prev,
+      pickupAddress: '',
+      dropoffAddress: ''
+    }));
+
+    // Clear search states
+    setSearchStates(prev => ({
+      pickup: {
+        isSearching: false,
+        results: [],
+        showResults: false,
+        hasSearched: false,
+        apiKeyError: prev.pickup.apiKeyError
+      },
+      dropoff: {
+        isSearching: false,
+        results: [],
+        showResults: false,
+        hasSearched: false,
+        apiKeyError: prev.dropoff.apiKeyError
+      }
+    }));
+  };
+
+  // Enhanced location search using Google Places API
+  const searchPlaces = async (query, type) => {
+    // Allow search from first character
+    if (!query || query.length < 1) {
+      return [];
+    }
+
+    try {
+      // Check if Google Maps API is available
+      if (window.google && window.google.maps && window.google.maps.places) {
+        return await performGooglePlacesSearch(query);
+      } else {
+        // Set API key error if Google Maps is not available
+        setSearchStates(prev => ({
+          ...prev,
+          [type]: {
+            ...prev[type],
+            apiKeyError: true
+          }
+        }));
+        return await performMockSearch(query);
+      }
+    } catch (error) {
+      console.error('Error searching places:', error);
+      // Set API key error on failure
+      setSearchStates(prev => ({
+        ...prev,
+        [type]: {
+          ...prev[type],
+          apiKeyError: true
+        }
+      }));
+      return await performMockSearch(query);
+    }
+  };
+
+  // Google Places API search
+  const performGooglePlacesSearch = async (query) => {
+    try {
+      const { Place } = await google.maps.importLibrary("places");
+      
+      const request = {
+        textQuery: query,
+        fields: ['displayName', 'formattedAddress', 'location', 'id'],
+        maxResultCount: 5,
+      };
+
+      const { places } = await Place.searchByText(request);
+      
+      if (places && places.length > 0) {
+        return places.map(place => ({
+          name: place.displayName || 'Unnamed Location',
+          formatted_address: place.formattedAddress || 'Address not available',
+          place_id: place.id,
+          geometry: {
+            location: {
+              lat: () => place.location.lat,
+              lng: () => place.location.lng
+            }
+          }
+        }));
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Google Places search error:', error);
+      throw error;
+    }
+  };
+
+  // Enhanced mock search implementation
+  const performMockSearch = async (query) => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Enhanced mock suggestions with realistic data
+    const mockResults = [
+      {
+        name: `${query} Grand Hotel`,
+        formatted_address: `${query} Grand Hotel, Downtown District, City 12345`,
+        place_id: `mock_place_${query}_hotel_1`,
+        geometry: {
+          location: {
+            lat: () => 40.7128 + Math.random() * 0.01,
+            lng: () => -74.0060 + Math.random() * 0.01
+          }
+        }
+      },
+      {
+        name: `${query} Street`,
+        formatted_address: `${query} Street, City Center, Metropolitan Area 12345`,
+        place_id: `mock_place_${query}_street_1`,
+        geometry: {
+          location: {
+            lat: () => 40.7580 + Math.random() * 0.01,
+            lng: () => -73.9855 + Math.random() * 0.01
+          }
+        }
+      },
+      {
+        name: `${query} International Airport`,
+        formatted_address: `${query} International Airport, Airport District 12346`,
+        place_id: `mock_place_${query}_airport_1`,
+        geometry: {
+          location: {
+            lat: () => 40.7489 + Math.random() * 0.01,
+            lng: () => -73.9857 + Math.random() * 0.01
+          }
+        }
+      }
+    ];
+    
+    return mockResults;
+  };
+
+  // Fixed location search with immediate response and better debouncing
+  const handleLocationSearch = async (type, value) => {
+    const addressField = type === 'pickup' ? 'pickupAddress' : 'dropoffAddress';
+    const locationField = type === 'pickup' ? 'pickupLocation' : 'dropoffLocation';
+    
+    // Update address immediately for smooth typing
+    setFormData(prev => ({
+      ...prev,
+      [addressField]: value,
+      // Clear location if search term is empty
+      [locationField]: value.length === 0 ? null : prev[locationField]
+    }));
+
+    // Clear error immediately
+    if (errors[addressField]) {
+      setErrors(prev => ({
+        ...prev,
+        [addressField]: ''
+      }));
+    }
+
+    // Clear previous timeout
+    if (searchTimeoutRef.current[type]) {
+      clearTimeout(searchTimeoutRef.current[type]);
+    }
+
+    // Handle empty queries
+    if (value.length === 0) {
+      setSearchStates(prev => ({
+        ...prev,
+        [type]: {
+          ...prev[type],
+          results: [],
+          showResults: false,
+          isSearching: false,
+          hasSearched: false
+        }
+      }));
+      return;
+    }
+
+    // Start searching immediately for single character
+    setSearchStates(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        isSearching: true,
+        showResults: true,
+        hasSearched: true
+      }
+    }));
+
+    // Reduced debounce time for better responsiveness
+    searchTimeoutRef.current[type] = setTimeout(async () => {
+      try {
+        const results = await searchPlaces(value, type);
+        setSearchStates(prev => ({
+          ...prev,
+          [type]: {
+            ...prev[type],
+            results,
+            isSearching: false,
+            showResults: true,
+            hasSearched: true
+          }
+        }));
+      } catch (error) {
+        console.error('Search error:', error);
+        setSearchStates(prev => ({
+          ...prev,
+          [type]: {
+            ...prev[type],
+            isSearching: false,
+            showResults: false,
+            results: [],
+            hasSearched: true,
+            apiKeyError: true
+          }
+        }));
+      }
+    }, 150); // Reduced from 400 to 150ms for better responsiveness
+  };
+
+  // Handle search result selection
+  const handleSearchResultSelect = (type, place) => {
+    const addressField = type === 'pickup' ? 'pickupAddress' : 'dropoffAddress';
+    const locationField = type === 'pickup' ? 'pickupLocation' : 'dropoffLocation';
+    
+    // Create location object with coordinates
+    const locationObject = {
+      displayAddress: place.name,
+      fullAddress: place.formatted_address,
+      coordinates: {
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng()
+      },
+      placeId: place.place_id,
+      name: place.name,
+      isCoordinateOnly: false,
+      source: 'search',
+      timestamp: Date.now()
+    };
+
+    // Update form data
+    setFormData(prev => ({
+      ...prev,
+      [addressField]: place.name,
+      [locationField]: locationObject
+    }));
+
+    // Hide search results
+    setSearchStates(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        showResults: false,
+        results: []
+      }
+    }));
+
+    // Clear error
+    if (errors[addressField]) {
+      setErrors(prev => ({
+        ...prev,
+        [addressField]: ''
+      }));
+    }
+
+    // Focus next input for better UX
+    setTimeout(() => {
+      if (type === 'pickup' && searchInputRefs.current.dropoff) {
+        searchInputRefs.current.dropoff.focus();
+      }
+    }, 100);
+  };
+
+  // Fixed input blur - longer timeout to prevent premature hiding
+  const handleInputBlur = (type) => {
+    setTimeout(() => {
+      setSearchStates(prev => ({
+        ...prev,
+        [type]: {
+          ...prev[type],
+          showResults: false
+        }
+      }));
+    }, 300); // Increased timeout for better UX
+  };
+
+  // Fixed input focus - always show results if available
+  const handleInputFocus = (type) => {
+    const searchState = searchStates[type];
+    if (searchState.hasSearched && searchState.results.length > 0) {
+      setSearchStates(prev => ({
+        ...prev,
+        [type]: {
+          ...prev[type],
+          showResults: true
+        }
+      }));
+    }
+  };
+
+  // Clear search
+  const clearSearch = (type) => {
+    const addressField = type === 'pickup' ? 'pickupAddress' : 'dropoffAddress';
+    const locationField = type === 'pickup' ? 'pickupLocation' : 'dropoffLocation';
+    
+    setFormData(prev => ({
+      ...prev,
+      [addressField]: '',
+      [locationField]: null
+    }));
+
+    setSearchStates(prev => ({
+      ...prev,
+      [type]: {
+        isSearching: false,
+        results: [],
+        showResults: false,
+        hasSearched: false,
+        apiKeyError: false
+      }
+    }));
+
+    // Clear any pending timeouts
+    if (searchTimeoutRef.current[type]) {
+      clearTimeout(searchTimeoutRef.current[type]);
+    }
+
+    if (searchInputRefs.current[type]) {
+      searchInputRefs.current[type].focus();
     }
   };
 
@@ -147,6 +542,7 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
         name: locationData.name || null,
         isCoordinateOnly: Boolean(locationData.isCoordinateOnly),
         addressComponents: locationData.addressComponents || null,
+        source: 'map_picker',
         timestamp: Date.now()
       };
 
@@ -270,6 +666,23 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
     if (!formData.time) {
       newErrors.time = 'Time is required';
     }
+
+    // Round trip validation
+    if (isRoundTrip) {
+      if (!formData.returnDate) {
+        newErrors.returnDate = 'Return date is required';
+      } else {
+        const outboundDate = new Date(formData.date);
+        const returnDate = new Date(formData.returnDate);
+        if (returnDate < outboundDate) {
+          newErrors.returnDate = 'Return date cannot be before outbound date';
+        }
+      }
+      if (!formData.returnTime) {
+        newErrors.returnTime = 'Return time is required';
+      }
+    }
+
     if (!formData.phoneNumber.trim()) {
       newErrors.phoneNumber = 'Phone number is required';
     } else if (!/^[\+]?[\d\s\-\(\)]{10,}$/.test(formData.phoneNumber.replace(/\s/g, ''))) {
@@ -302,6 +715,7 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
       // Prepare enhanced form data
       const enhancedFormData = {
         ...formData,
+        isRoundTrip,
         // Add metadata for backend processing
         locationMetadata: {
           pickup: {
@@ -311,7 +725,8 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
             coordinatesValid: formData.pickupLocation && 
               formData.pickupLocation.coordinates &&
               typeof formData.pickupLocation.coordinates.lat === 'number' &&
-              typeof formData.pickupLocation.coordinates.lng === 'number'
+              typeof formData.pickupLocation.coordinates.lng === 'number',
+            source: formData.pickupLocation?.source || 'unknown'
           },
           dropoff: {
             hasExactAddress: formData.dropoffLocation && !formData.dropoffLocation.isCoordinateOnly,
@@ -320,7 +735,8 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
             coordinatesValid: formData.dropoffLocation && 
               formData.dropoffLocation.coordinates &&
               typeof formData.dropoffLocation.coordinates.lat === 'number' &&
-              typeof formData.dropoffLocation.coordinates.lng === 'number'
+              typeof formData.dropoffLocation.coordinates.lng === 'number',
+            source: formData.dropoffLocation?.source || 'unknown'
           }
         },
         // Add timestamp
@@ -333,105 +749,297 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
     }
   };
 
-  // Enhanced LocationInput component
+  const RoundTripIndicator = () => {
+  if (!isRoundTrip) return null;
+  
+  return (
+    <div className="md:col-span-2 lg:col-span-3 mb-4">
+      <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+        <div className="flex items-center space-x-2">
+          <ArrowRightLeft className="h-5 w-5 text-blue-400" />
+          <span className="text-blue-300 font-medium">Round Trip Selected</span>
+        </div>
+        <p className="text-blue-200 text-sm mt-1">
+          Please specify your return journey details below.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+  // Enhanced LocationInput component with better focus handling
   const LocationInput = ({ 
-    label, 
-    value, 
-    placeholder, 
-    error, 
-    required, 
-    onPickerOpen,
-    locationData
-  }) => {
-    const getLocationIcon = () => {
-      if (!locationData) return '📍';
-      
-      if (locationData.name && !locationData.isCoordinateOnly) {
-        return '🏢'; // Business/landmark
-      } else if (locationData.isCoordinateOnly) {
-        return '📍'; // Exact coordinates
-      } else {
-        return '🏠'; // Regular address
+  label, 
+  value, 
+  placeholder, 
+  error, 
+  required, 
+  onPickerOpen,
+  locationData,
+  type,
+  onLocationSearch, // Function to handle the actual search API call
+  onLocationSelect, // Function to handle location selection
+  onClearLocation  // Function to clear the location
+}) => {
+  const [searchTerm, setSearchTerm] = useState(value || '');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState(false);
+  
+  const searchTimeoutRef = useRef(null);
+  const inputRef = useRef(null);
+  const resultsRef = useRef(null);
+
+  // Debounced search function
+  const performSearch = useCallback(async (query) => {
+    if (!query.trim() || query.length < 2) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    
+    try {
+      const results = await onLocationSearch(query);
+      setSearchResults(results || []);
+      setShowResults(true);
+      setApiKeyError(false);
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+      setApiKeyError(true);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [onLocationSearch]);
+
+  // Handle input change with immediate UI update and debounced search
+  const handleInputChange = useCallback((e) => {
+    const newValue = e.target.value;
+    setSearchTerm(newValue);
+    
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // If input is empty, clear results immediately
+    if (!newValue.trim()) {
+      setSearchResults([]);
+      setShowResults(false);
+      setIsSearching(false);
+      return;
+    }
+    
+    // Debounce search for 300ms
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(newValue);
+    }, 300);
+  }, [performSearch]);
+
+  // Handle input focus
+  const handleFocus = useCallback(() => {
+    if (searchResults.length > 0) {
+      setShowResults(true);
+    }
+  }, [searchResults.length]);
+
+  // Handle input blur with delay to allow for result clicks
+  const handleBlur = useCallback(() => {
+    setTimeout(() => {
+      setShowResults(false);
+    }, 200);
+  }, []);
+
+  // Handle result selection
+  const handleResultSelect = useCallback((place) => {
+    setSearchTerm(place.name || place.formatted_address);
+    setSearchResults([]);
+    setShowResults(false);
+    onLocationSelect(type, place);
+  }, [type, onLocationSelect]);
+
+  // Handle clear search
+  const handleClear = useCallback(() => {
+    setSearchTerm('');
+    setSearchResults([]);
+    setShowResults(false);
+    setIsSearching(false);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    onClearLocation(type);
+    inputRef.current?.focus();
+  }, [type, onClearLocation]);
+
+  // Handle escape key to close results
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Escape') {
+      setShowResults(false);
+      inputRef.current?.blur();
+    }
+  }, []);
+
+  // Update search term when value prop changes
+  useEffect(() => {
+    if (value !== searchTerm) {
+      setSearchTerm(value || '');
+    }
+  }, [value]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
       }
     };
+  }, []);
 
-    const getLocationInfo = () => {
-      if (!locationData) return null;
+  return (
+    <div className="space-y-2 relative">
+      <label className="block text-sm font-medium text-gray-300">
+        {label} {required && <span className="text-red-400">*</span>}
+      </label>
       
-      if (locationData.isCoordinateOnly) {
-        return 'Exact coordinates';
-      } else if (locationData.name) {
-        return `${locationData.name}`;
-      } else {
-        return 'Address selected';
-      }
-    };
-
-    const getCoordinateDisplay = () => {
-      if (!locationData || !locationData.coordinates) return null;
-      
-      const lat = Number(locationData.coordinates.lat).toFixed(3);
-      const lng = Number(locationData.coordinates.lng).toFixed(3);
-      return `${lat}, ${lng}`;
-    };
-
-    return (
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-300">
-          {label} {required && <span className="text-red-400">*</span>}
-        </label>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <MapPin className="h-5 w-5 text-gray-400" />
+      {/* API Key Error Warning */}
+      {apiKeyError && (
+        <div className="p-2 bg-gold-900/30 border border-gold-700/50 rounded-lg mb-2">
+          <div className="text-gold-300 text-xs font-medium mb-1">
+            ⚠️ Limited Search
           </div>
-          <input
-            type="text"
-            value={value}
-            readOnly
-            placeholder={placeholder}
-            className={`w-full pl-10 pr-12 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-colors ${
-              error ? 'border-red-500' : 'border-gray-700'
-            }`}
-            onClick={onPickerOpen}
-          />
-          <Button
-            type="button"
-            onClick={onPickerOpen}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gold-500 transition-colors"
-            title="Open location picker"
-          >
-            <Map className="h-5 w-5 text-gray-400 hover:text-gold-500" />
-          </Button>
+          <div className="text-gold-200 text-xs">
+            Address search is unavailable. Click the map icon to select your location.
+          </div>
+        </div>
+      )}
+      
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <MapPin className="h-5 w-5 text-gray-400" />
         </div>
         
-        {/* Location info display */}
-        {value && locationData && (
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center space-x-2 text-gray-500">
-              <span>{getLocationIcon()}</span>
-              <span>{getLocationInfo()}</span>
+        <input
+          ref={inputRef}
+          type="text"
+          value={searchTerm}
+          onChange={handleInputChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          placeholder={apiKeyError ? "Search unavailable - use map" : placeholder}
+          disabled={apiKeyError}
+          className={`w-full pl-10 pr-24 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-colors ${
+            error ? 'border-red-500' : 'border-gray-700'
+          } ${apiKeyError ? 'opacity-50 cursor-not-allowed' : ''}`}
+        />
+        
+        <div className="absolute inset-y-0 right-0 flex items-center space-x-1">
+          {isSearching && (
+            <div className="pr-1">
+              <Loader2 className="h-4 w-4 animate-spin text-gold-500" />
             </div>
-            {locationData.coordinates && (
-              <span className="text-gray-600">
-                {getCoordinateDisplay()}
-              </span>
-            )}
-          </div>
-        )}
-        
-        {error && (
-          <p className="text-sm text-red-400">{error}</p>
-        )}
-        
-        {!value && (
-          <p className="text-xs text-gray-500 flex items-center">
-            <Map className="h-3 w-3 mr-1" />
-            Click to select location on map
-          </p>
-        )}
+          )}
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="p-1 hover:text-red-400 transition-colors"
+              title="Clear search"
+            >
+              <X className="h-4 w-4 text-gray-400 hover:text-red-400" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onPickerOpen}
+            className="pr-3 flex items-center hover:text-gold-500 transition-colors"
+            title="Open map picker"
+          >
+            <Map className="h-5 w-5 text-gray-400 hover:text-gold-500" />
+          </button>
+        </div>
       </div>
-    );
-  };
+
+      {/* Search Results */}
+      {showResults && searchResults.length > 0 && !apiKeyError && (
+        <div 
+          ref={resultsRef}
+          className="absolute top-full left-0 right-0 z-50 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl max-h-64 overflow-y-auto"
+        >
+          <div className="p-3 border-b border-gray-700">
+            <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide">
+              Search Results
+            </div>
+          </div>
+          <div className="space-y-0">
+            {searchResults.map((place, index) => (
+              <button
+                key={`${place.place_id || index}`}
+                type="button"
+                className="w-full text-left p-3 bg-gray-800 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition-colors focus:bg-gray-700 focus:outline-none"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => handleResultSelect(place)}
+              >
+                <div className="text-white font-medium text-sm">
+                  {place.name}
+                </div>
+                <div className="text-gray-400 text-xs mt-1 line-clamp-2">
+                  {place.formatted_address}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* No results message */}
+      {showResults && searchTerm.length >= 2 && searchResults.length === 0 && !isSearching && !apiKeyError && (
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl p-4">
+          <div className="text-center text-gray-400">
+            <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <div className="text-sm">No locations found</div>
+            <div className="text-xs mt-1">Try a different search term or use the map picker</div>
+          </div>
+        </div>
+      )}
+      
+      {/* Location info display */}
+      {locationData && locationData.coordinates && (
+        <div className="flex items-center justify-between text-xs bg-gray-800/50 rounded p-2 border border-gray-700">
+          <div className="flex items-center space-x-2 text-gray-500">
+            <span>{locationData.isCoordinateOnly ? '📍' : '🏢'}</span>
+            <span>
+              {locationData.isCoordinateOnly 
+                ? 'Exact coordinates' 
+                : locationData.name || 'Address selected'
+              }
+            </span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <span className="text-green-400 text-xs">✓</span>
+            <span className="text-gray-400">
+              {Number(locationData.coordinates.lat).toFixed(3)}, {Number(locationData.coordinates.lng).toFixed(3)}
+            </span>
+          </div>
+        </div>
+      )}
+      
+      {error && (
+        <p className="text-sm text-red-400">{error}</p>
+      )}
+      
+      {!searchTerm && !apiKeyError && (
+        <p className="text-xs text-gray-500 flex items-center">
+          <Search className="h-3 w-3 mr-1" />
+          Type to search or click map icon to select
+        </p>
+      )}
+    </div>
+  );
+};
 
   return (
     <div className="space-y-8">
@@ -439,34 +1047,50 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Location Inputs */}
         <LocationInput
-          label="Pickup Address"
-          placeholder="Select pickup location"
+  label="Pickup Address"
+  placeholder="Search destination..."
           value={formData.pickupAddress}
           error={errors.pickupAddress}
           required
           onPickerOpen={() => openLocationPicker('pickup')}
-          locationData={formData.pickupLocation}
-        />
+  type="pickup" 
+  locationData={formData.pickupAddress}
+  onLocationSearch={async (query) => {
+    setSelectedLocation(query);
+    // Your search API call here
+    const response = await searchPlacesAPI(query);
+    return response.results;
+  }}
+  onLocationSelect={(type, place) => {
+    // Handle location selection
+    setSelectedLocation(type, place);
+  }}
+  onClearLocation={(type) => {
+    setSelectedLocation(type);
+  }}
+/>
 
         <LocationInput
           label="Drop-off Address"
-          placeholder="Select destination"
+          placeholder="Search destination..."
           value={formData.dropoffAddress}
           error={errors.dropoffAddress}
           required
           onPickerOpen={() => openLocationPicker('dropoff')}
           locationData={formData.dropoffLocation}
+          type="dropoff"
         />
 
-         <Select
-            label="Vehicle Type"
-            options={vehicleOptions}
-            value={formData.vehicleType}
-            onChange={(e) => handleInputChange('vehicleType', e.target.value)}
-            placeholder="Select Vehicle"
-            icon={Car}
-            required
-          />
+        <Select
+          label="Vehicle Type"
+          options={vehicleOptions}
+          value={formData.vehicleType}
+          onChange={(e) => handleInputChange('vehicleType', e.target.value)}
+          placeholder="Select Vehicle"
+          icon={Car}
+          error={errors.vehicleType}
+          required
+        />
 
         {/* Trip Details */}
         <Select
@@ -478,6 +1102,8 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
           error={errors.tripType}
           required
         />
+
+        <RoundTripIndicator />
 
         <Input
           label="Date"
@@ -499,6 +1125,31 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
           error={errors.time}
           required
         />
+
+        {isRoundTrip && (
+  <>
+    <Input
+      label="Return Date"
+      type="date"
+      value={formData.returnDate}
+      onChange={(e) => handleInputChange('returnDate', e.target.value)}
+      icon={Calendar}
+      error={errors.returnDate}
+      min={formData.date || new Date().toISOString().split('T')[0]}
+      required
+    />
+
+    <Input
+      label="Return Time"
+      type="time"
+      value={formData.returnTime}
+      onChange={(e) => handleInputChange('returnTime', e.target.value)}
+      icon={Clock}
+      error={errors.returnTime}
+      required
+    />
+  </>
+)}
 
         {/* Additional Options */}
         <Select
@@ -534,15 +1185,56 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
           />
         </div>
 
+        {/* Extra Services */}
+        <div className="md:col-span-2 lg:col-span-3">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-300">
+              Extra Services
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              {serviceOptions.map((service) => (
+                <label key={service.value} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.extraServices.includes(service.value)}
+                    onChange={(e) => {
+                      const currentServices = formData.extraServices.split(',').filter(s => s.trim());
+                      let newServices;
+                      if (e.target.checked) {
+                        newServices = [...currentServices, service.value];
+                      } else {
+                        newServices = currentServices.filter(s => s !== service.value);
+                      }
+                      handleInputChange('extraServices', newServices.join(','));
+                    }}
+                    className="rounded border-gray-600 text-gold-500 focus:ring-gold-500 focus:ring-offset-gray-900"
+                  />
+                  <span className="text-sm text-gray-300">{service.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Special Requests */}
         <div className="md:col-span-2 lg:col-span-3">
-          <Input
-            label="Special Requests"
-            placeholder="Any special requirements or requests"
-            value={formData.specialRequests}
-            onChange={(e) => handleInputChange('specialRequests', e.target.value)}
-            icon={MessageCircle}
-          />
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-300">
+              Special Requests
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-start pt-3 pointer-events-none">
+                <MessageCircle className="h-5 w-5 text-gray-400" />
+              </div>
+              <textarea
+                placeholder="Any special requirements or requests..."
+                value={formData.specialRequests}
+                onChange={(e) => handleInputChange('specialRequests', e.target.value)}
+                rows={3}
+                className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-colors resize-none"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -552,9 +1244,16 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
           onClick={handleSubmit}
           size="xl"
           disabled={loading}
-          className="w-full sm:w-auto min-w-[280px]"
+          className="w-full sm:w-auto min-w-[280px] bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-black font-semibold py-4 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Processing...' : 'Calculate Price & Continue'}
+          {loading ? (
+            <div className="flex items-center space-x-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Processing...</span>
+            </div>
+          ) : (
+            'Calculate Price & Continue'
+          )}
         </Button>
       </div>
 
