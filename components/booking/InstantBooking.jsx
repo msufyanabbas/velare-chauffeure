@@ -112,8 +112,8 @@ const InstantBooking = ({ preSelectedCar }) => {
             <div className="text-center mt-8 sm:mt-12">
               <p className="text-gray-400 text-sm sm:text-base">
                 Need help? Contact our 24/7 support team at{' '}
-                <a href="tel:+1234567890" className="text-gold-400 hover:text-gold-300 transition-colors">
-                  +1 (234) 567-8900
+                <a href="tel:1300 650 677" className="text-gold-400 hover:text-gold-300 transition-colors">
+                  1300 650 677
                 </a>
               </p>
             </div>

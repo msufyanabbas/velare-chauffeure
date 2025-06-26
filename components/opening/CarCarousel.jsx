@@ -24,7 +24,7 @@ const CarCarousel = ({ onNext }) => {
     {
       type: 'suv',
       name: 'SUV',
-      icon: Truck,
+      icon: Car,
       description: 'Spacious and luxurious for family travels',
       capacity: '1-3 passengers',
     },

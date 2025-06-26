@@ -101,10 +101,10 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
 
   const vehicleOptions = [
     { value: 'luxury_sedan', label: 'Luxury Sedans' },
-    { value: 'suv', label: 'SUV' },
     { value: 'premium_luxury_sedan', label: 'Premium Luxury Sedans' },
+    { value: 'suv', label: 'SUV' },
+    { value: '7_seater', label: '7 seater' },
     { value: 'people_mover_11_seater', label: 'People mover 11 seater' },
-    { value: '7_seater', label: '7 seater' }
   ];
 
   const tripOptions = [
