@@ -306,7 +306,7 @@ const BookingPage = ({preSelectedVehicle}) => {
               </div>
               
               {/* NEW: Peak Time Indicator */}
-              {priceData.isPeakTime && (
+              {/* {priceData.isPeakTime && (
                 <div className="flex justify-between items-center py-2 border-b border-gray-800">
                   <span className="text-gray-400">Peak Time:</span>
                   <span className="text-orange-400 font-medium flex items-center">
@@ -314,10 +314,10 @@ const BookingPage = ({preSelectedVehicle}) => {
                     Weekend/Friday (+15%)
                   </span>
                 </div>
-              )}
+              )} */}
 
               {/* NEW: Airport Trip Indicator */}
-              {priceData.isAirportTrip && (
+              {/* {priceData.isAirportTrip && (
                 <div className="flex justify-between items-center py-2 border-b border-gray-800">
                   <span className="text-gray-400">Airport Service:</span>
                   <span className="text-blue-400 font-medium flex items-center">
@@ -325,32 +325,32 @@ const BookingPage = ({preSelectedVehicle}) => {
                     Airport Fee Applied
                   </span>
                 </div>
-              )}
+              )} */}
 
               {/* Toll Information */}
-              {priceData.tolls > 0 && (
+              {/* {priceData.tolls > 0 && (
                 <div className="flex justify-between items-center py-2 border-b border-gray-800">
                   <span className="text-gray-400">Est. Tolls:</span>
                   <span className="text-white font-medium">{formatCurrency(priceData.tolls)}</span>
                 </div>
-              )}
+              )} */}
             </>
           )}
           
           {/* NEW: Additional Services/Fees */}
-          {bookingData.waitingTime && bookingData.waitingTime > 0 && (
+          {/* {bookingData.waitingTime && bookingData.waitingTime > 0 && (
             <div className="flex justify-between items-center py-2 border-b border-gray-800">
               <span className="text-gray-400">Waiting Time:</span>
               <span className="text-white font-medium">{bookingData.waitingTime} minutes</span>
             </div>
-          )}
+          )} */}
 
-          {bookingData.additionalStops && bookingData.additionalStops > 0 && (
+          {/* {bookingData.additionalStops && bookingData.additionalStops > 0 && (
             <div className="flex justify-between items-center py-2 border-b border-gray-800">
               <span className="text-gray-400">Additional Stops:</span>
               <span className="text-white font-medium">{bookingData.additionalStops}</span>
             </div>
-          )}
+          )} */}
 
           {bookingData.carDecoration && priceData?.serviceType === 'events' && (
             <div className="flex justify-between items-center py-2 border-b border-gray-800">
@@ -433,7 +433,7 @@ const BookingPage = ({preSelectedVehicle}) => {
           </div>
 
           {/* Distance Charges */}
-          {priceData.kmCharges > 0 && (
+          {priceData.kmCharges  && (
             <div className="flex justify-between items-center py-2 border-b border-gray-800">
               <span className="text-gray-400">
                 Distance Charges
@@ -459,7 +459,7 @@ const BookingPage = ({preSelectedVehicle}) => {
           )}
 
           {/* Peak Time Surcharge */}
-          {priceData.peakSurcharge > 0 && (
+          {/* {priceData.peakSurcharge > 0 && (
             <div className="flex justify-between items-center py-2 border-b border-gray-800">
               <span className="text-orange-400">
                 Peak Time Surcharge (15%)
@@ -469,7 +469,7 @@ const BookingPage = ({preSelectedVehicle}) => {
               </span>
               <span className="text-orange-400 font-medium">+{formatCurrency(priceData.peakSurcharge)}</span>
             </div>
-          )}
+          )} */}
 
           {/* Additional Fees */}
           {priceData.additionalFees > 0 && (
@@ -477,9 +477,9 @@ const BookingPage = ({preSelectedVehicle}) => {
               <div className="text-gray-400">
                 Additional Fees
                 <div className="text-xs text-gray-500 mt-1 space-y-1">
-                  {priceData.isAirportTrip && <div>• Airport service fee</div>}
+                  {/* {priceData.isAirportTrip && <div>• Airport service fee</div>}
                   {bookingData.waitingTime > 0 && <div>• Waiting time fee</div>}
-                  {bookingData.additionalStops > 0 && <div>• Extra stops fee</div>}
+                  {bookingData.additionalStops > 0 && <div>• Extra stops fee</div>} */}
                   {bookingData.carDecoration && <div>• Event decoration fee</div>}
                 </div>
               </div>
@@ -488,12 +488,12 @@ const BookingPage = ({preSelectedVehicle}) => {
           )}
 
           {/* Tolls */}
-          {priceData.tolls > 0 && (
+          {/* {priceData.tolls > 0 && (
             <div className="flex justify-between items-center py-2 border-b border-gray-800">
               <span className="text-gray-400">Estimated Tolls</span>
               <span className="text-white font-medium">{formatCurrency(priceData.tolls)}</span>
             </div>
-          )}
+          )} */}
 
           {/* Subtotal */}
           <div className="flex justify-between items-center py-2 border-b border-gray-800 font-semibold">
