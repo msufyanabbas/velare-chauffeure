@@ -552,7 +552,7 @@ const BookingPage = ({preSelectedVehicle}) => {
         />
       </Head>
 
-      <div className="min-h-screen bg-black py-12">
+      <div className="min-h-screen bg-transparent py-12 w-full border-gray">
         <div className="container mx-auto px-4">
           {renderStepIndicator()}
           {renderStepTitle()}
@@ -618,8 +618,6 @@ const BookingPage = ({preSelectedVehicle}) => {
 
           {/* Step 1: Booking Form */}
           {step === 1 && (
-            <div className="max-w-6xl mx-auto">
-              <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-8 backdrop-blur-sm">
                 <BookingForm
                   onSubmit={handleBookingSubmit}
                   loading={loading}
@@ -630,8 +628,6 @@ const BookingPage = ({preSelectedVehicle}) => {
                   mapsLoaded={mapsLoaded}
                   preSelectedVehicle={preSelectedVehicle}
                 />
-              </div>
-            </div>
           )}
 
           {/* Step 2: Price Review */}

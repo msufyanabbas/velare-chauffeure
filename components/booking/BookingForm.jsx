@@ -15,7 +15,9 @@ import {
   Loader2,
   ArrowRightLeft,
   Plus,
-  Minus
+  Minus,
+  Route,
+  Settings
 } from 'lucide-react';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
@@ -120,7 +122,6 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
     { value: 'refreshments', label: 'Refreshments' },
     { value: 'newspapers', label: 'Newspapers' },
     { value: 'child-seat', label: 'Child Seat' },
-    { value: 'champagne', label: 'Champagne Service' }
   ];
 
   const passengerOptions = Array.from({ length: 8 }, (_, i) => ({
@@ -296,15 +297,15 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
 
   // Fixed location search with immediate response and better debouncing
   const handleLocationSearch = async (type, value) => {
-    const addressField = type === 'pickup' ? 'pickupAddress' : 'dropoffAddress';
-    const locationField = type === 'pickup' ? 'pickupLocation' : 'dropoffLocation';
+    const addressField = type === "pickup" ? 'pickupAddress' : 'dropoffAddress';
+    const locationField = type === "pickup" ? 'pickupLocation' : 'dropoffLocation';
     
     // Update address immediately for smooth typing
     setFormData(prev => ({
       ...prev,
       [addressField]: value,
       // Clear location if search term is empty
-      [locationField]: value.length === 0 ? null : prev[locationField]
+      [locationField]: prev[locationField]
     }));
 
     // Clear error immediately
@@ -347,7 +348,7 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
     }));
 
     // Reduced debounce time for better responsiveness
-    searchTimeoutRef.current[type] = setTimeout(async () => {
+  
       try {
         const results = await searchPlaces(value, type);
         setSearchStates(prev => ({
@@ -357,7 +358,7 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
             results,
             isSearching: false,
             showResults: true,
-            hasSearched: true
+            hasSearched: false
           }
         }));
       } catch (error) {
@@ -374,7 +375,6 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
           }
         }));
       }
-    }, 150); // Reduced from 400 to 150ms for better responsiveness
   };
 
   // Handle search result selection
@@ -768,493 +768,464 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
 };
 
   // Enhanced LocationInput component with better focus handling
-  const LocationInput = ({ 
-  label, 
-  value, 
-  placeholder, 
-  error, 
-  required, 
-  onPickerOpen,
-  locationData,
-  type,
-  onLocationSearch, // Function to handle the actual search API call
-  onLocationSelect, // Function to handle location selection
-  onClearLocation  // Function to clear the location
-}) => {
-  const [searchTerm, setSearchTerm] = useState(value || '');
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [apiKeyError, setApiKeyError] = useState(false);
-  
-  const searchTimeoutRef = useRef(null);
-  const inputRef = useRef(null);
-  const resultsRef = useRef(null);
-
-  // Debounced search function
-  const performSearch = useCallback(async (query) => {
-    if (!query.trim() || query.length < 2) {
-      setSearchResults([]);
-      setShowResults(false);
-      return;
-    }
-
-    setIsSearching(true);
-    
-    try {
-      const results = await onLocationSearch(query);
-      setSearchResults(results || []);
-      setShowResults(true);
-      setApiKeyError(false);
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchResults([]);
-      setApiKeyError(true);
-    } finally {
-      setIsSearching(false);
-    }
-  }, [onLocationSearch]);
-
-  // Handle input change with immediate UI update and debounced search
-  const handleInputChange = useCallback((e) => {
-    const newValue = e.target.value;
-    setSearchTerm(newValue);
-    
-    // Clear existing timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    
-    // If input is empty, clear results immediately
-    if (!newValue.trim()) {
-      setSearchResults([]);
-      setShowResults(false);
-      setIsSearching(false);
-      return;
-    }
-    
-    // Debounce search for 300ms
-    searchTimeoutRef.current = setTimeout(() => {
-      performSearch(newValue);
-    }, 300);
-  }, [performSearch]);
-
-  // Handle input focus
-  const handleFocus = useCallback(() => {
-    if (searchResults.length > 0) {
-      setShowResults(true);
-    }
-  }, [searchResults.length]);
-
-  // Handle input blur with delay to allow for result clicks
-  const handleBlur = useCallback(() => {
-    setTimeout(() => {
-      setShowResults(false);
-    }, 200);
-  }, []);
-
-  // Handle result selection
-  const handleResultSelect = useCallback((place) => {
-    setSearchTerm(place.name || place.formatted_address);
-    setSearchResults([]);
-    setShowResults(false);
-    onLocationSelect(type, place);
-  }, [type, onLocationSelect]);
-
-  // Handle clear search
-  const handleClear = useCallback(() => {
-    setSearchTerm('');
-    setSearchResults([]);
-    setShowResults(false);
-    setIsSearching(false);
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    onClearLocation(type);
-    inputRef.current?.focus();
-  }, [type, onClearLocation]);
-
-  // Handle escape key to close results
-  const handleKeyDown = useCallback((e) => {
-    if (e.key === 'Escape') {
-      setShowResults(false);
-      inputRef.current?.blur();
-    }
-  }, []);
-
-  // Update search term when value prop changes
-  useEffect(() => {
-    if (value !== searchTerm) {
-      setSearchTerm(value || '');
-    }
-  }, [value]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  return (
-    <div className="space-y-2 relative">
-      <label className="block text-sm font-medium text-gray-300">
-        {label} {required && <span className="text-red-400">*</span>}
-      </label>
-      
-      {/* API Key Error Warning */}
-      {apiKeyError && (
-        <div className="p-2 bg-gold-900/30 border border-gold-700/50 rounded-lg mb-2">
-          <div className="text-gold-300 text-xs font-medium mb-1">
-            ⚠️ Limited Search
-          </div>
-          <div className="text-gold-200 text-xs">
-            Address search is unavailable. Click the map icon to select your location.
-          </div>
-        </div>
-      )}
-      
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <MapPin className="h-5 w-5 text-gray-400" />
-        </div>
+ const LocationInput = ({ 
+    label, 
+    value, 
+    placeholder, 
+    error, 
+    required, 
+    onPickerOpen,
+    type
+  }) => {
+    const searchState = searchStates[type];
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-300">
+          {label} {required && <span className="text-red-400">*</span>}
+        </label>
         
-        <input
-          ref={inputRef}
-          type="text"
-          value={searchTerm}
-          onChange={handleInputChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
-          placeholder={apiKeyError ? "Search unavailable - use map" : placeholder}
-          disabled={apiKeyError}
-          className={`w-full pl-10 pr-24 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-colors ${
-            error ? 'border-red-500' : 'border-gray-700'
-          } ${apiKeyError ? 'opacity-50 cursor-not-allowed' : ''}`}
-        />
-        
-        <div className="absolute inset-y-0 right-0 flex items-center space-x-1">
-          {isSearching && (
-            <div className="pr-1">
-              <Loader2 className="h-4 w-4 animate-spin text-gold-500" />
+        <div className="relative">
+          {/* Search Input */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
             </div>
-          )}
-          {searchTerm && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="p-1 hover:text-red-400 transition-colors"
-              title="Clear search"
-            >
-              <X className="h-4 w-4 text-gray-400 hover:text-red-400" />
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={onPickerOpen}
-            className="pr-3 flex items-center hover:text-gold-500 transition-colors"
-            title="Open map picker"
-          >
-            <Map className="h-5 w-5 text-gray-400 hover:text-gold-500" />
-          </button>
-        </div>
-      </div>
-
-      {/* Search Results */}
-      {showResults && searchResults.length > 0 && !apiKeyError && (
-        <div 
-          ref={resultsRef}
-          className="absolute top-full left-0 right-0 z-50 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl max-h-64 overflow-y-auto"
-        >
-          <div className="p-3 border-b border-gray-700">
-            <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide">
-              Search Results
-            </div>
-          </div>
-          <div className="space-y-0">
-            {searchResults.map((place, index) => (
+            
+            <input
+              ref={(el) => (searchInputRefs.current[type] = el)}
+              type="text"
+              value={value}
+              onChange={(e) => handleLocationSearch(type, e.target.value)}
+              onFocus={() => handleInputFocus(type)}
+              // onBlur={() => handleInputBlur(type)}
+              placeholder={searchState.apiKeyError ? "Search unavailable - use map" : placeholder}
+              className={`w-full pl-10 pr-20 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-colors ${
+                error ? 'border-red-500' : 'border-gray-700'
+              }`}
+            />
+            
+            {/* Action Buttons */}
+            <div className="absolute inset-y-0 right-0 flex items-center space-x-1 pr-3">
+              {/* Loading Spinner */}
+              {searchState.isSearching && (
+                <div className="w-5 h-5 border-2 border-gold-500 border-t-transparent rounded-full animate-spin"></div>
+              )}
+              
+              {/* Clear Button */}
+              {value && !searchState.isSearching && (
+                <button
+                  type="button"
+                  onClick={() => clearSearch(type)}
+                  className="p-1 text-gray-400 hover:text-white rounded transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+              
+              {/* Map Picker Button */}
               <button
-                key={`${place.place_id || index}`}
                 type="button"
-                className="w-full text-left p-3 bg-gray-800 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition-colors focus:bg-gray-700 focus:outline-none"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => handleResultSelect(place)}
+                onClick={onPickerOpen}
+                className="p-1 text-gray-400 hover:text-gold-500 rounded transition-colors"
+                title="Choose on map"
               >
-                <div className="text-white font-medium text-sm">
-                  {place.name}
-                </div>
-                <div className="text-gray-400 text-xs mt-1 line-clamp-2">
-                  {place.formatted_address}
-                </div>
+                <MapPin className="h-4 w-4" />
               </button>
-            ))}
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* No results message */}
-      {showResults && searchTerm.length >= 2 && searchResults.length === 0 && !isSearching && !apiKeyError && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl p-4">
-          <div className="text-center text-gray-400">
-            <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <div className="text-sm">No locations found</div>
-            <div className="text-xs mt-1">Try a different search term or use the map picker</div>
-          </div>
-        </div>
-      )}
-      
-      {/* Location info display */}
-      {locationData && locationData.coordinates && (
-        <div className="flex items-center justify-between text-xs bg-gray-800/50 rounded p-2 border border-gray-700">
-          <div className="flex items-center space-x-2 text-gray-500">
-            <span>{locationData.isCoordinateOnly ? '📍' : '🏢'}</span>
-            <span>
-              {locationData.isCoordinateOnly 
-                ? 'Exact coordinates' 
-                : locationData.name || 'Address selected'
-              }
-            </span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <span className="text-green-400 text-xs">✓</span>
-            <span className="text-gray-400">
-              {Number(locationData.coordinates.lat).toFixed(3)}, {Number(locationData.coordinates.lng).toFixed(3)}
-            </span>
-          </div>
-        </div>
-      )}
-      
-      {error && (
-        <p className="text-sm text-red-400">{error}</p>
-      )}
-      
-      {!searchTerm && !apiKeyError && (
-        <p className="text-xs text-gray-500 flex items-center">
-          <Search className="h-3 w-3 mr-1" />
-          Type to search or click map icon to select
-        </p>
-      )}
-    </div>
-  );
-};
-
-  return (
-    <div className="space-y-8">
-      {/* Form Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Location Inputs */}
-        <LocationInput
-  label="Pickup Address"
-  placeholder="Search destination..."
-          value={formData.pickupAddress}
-          error={errors.pickupAddress}
-          required
-          onPickerOpen={() => openLocationPicker('pickup')}
-  type="pickup" 
-  locationData={formData.pickupAddress}
-  onLocationSearch={async (query) => {
-    setSelectedLocation(query);
-    // Your search API call here
-    const response = await searchPlacesAPI(query);
-    return response.results;
-  }}
-  onLocationSelect={(type, place) => {
-    // Handle location selection
-    setSelectedLocation(type, place);
-  }}
-  onClearLocation={(type) => {
-    setSelectedLocation(type);
-  }}
-/>
-
-        <LocationInput
-          label="Drop-off Address"
-          placeholder="Search destination..."
-          value={formData.dropoffAddress}
-          error={errors.dropoffAddress}
-          required
-          onPickerOpen={() => openLocationPicker('dropoff')}
-          locationData={formData.dropoffLocation}
-          type="dropoff"
-        />
-
-        <Select
-          label="Vehicle Type"
-          options={vehicleOptions}
-          value={formData.vehicleType}
-          onChange={(e) => handleInputChange('vehicleType', e.target.value)}
-          placeholder="Select Vehicle"
-          icon={Car}
-          error={errors.vehicleType}
-          required
-        />
-
-        {/* Trip Details */}
-        <Select
-          label="Trip Type"
-          options={tripOptions}
-          value={formData.tripType}
-          onChange={(e) => handleInputChange('tripType', e.target.value)}
-          placeholder="Select Trip Type"
-          error={errors.tripType}
-          required
-        />
-
-        <RoundTripIndicator />
-
-        <Input
-          label="Date"
-          type="date"
-          value={formData.date}
-          onChange={(e) => handleInputChange('date', e.target.value)}
-          icon={Calendar}
-          error={errors.date}
-          min={new Date().toISOString().split('T')[0]}
-          required
-        />
-
-        <Input
-          label="Time"
-          type="time"
-          value={formData.time}
-          onChange={(e) => handleInputChange('time', e.target.value)}
-          icon={Clock}
-          error={errors.time}
-          required
-        />
-
-        {isRoundTrip && (
-  <>
-    <Input
-      label="Return Date"
-      type="date"
-      value={formData.returnDate}
-      onChange={(e) => handleInputChange('returnDate', e.target.value)}
-      icon={Calendar}
-      error={errors.returnDate}
-      min={formData.date || new Date().toISOString().split('T')[0]}
-      required
-    />
-
-    <Input
-      label="Return Time"
-      type="time"
-      value={formData.returnTime}
-      onChange={(e) => handleInputChange('returnTime', e.target.value)}
-      icon={Clock}
-      error={errors.returnTime}
-      required
-    />
-  </>
-)}
-
-        {/* Additional Options */}
-        <Select
-          label="Passengers"
-          options={passengerOptions}
-          value={formData.passengers}
-          onChange={(e) => handleInputChange('passengers', e.target.value)}
-          icon={Users}
-        />
-
-        <Input
-          label="Phone Number"
-          type="tel"
-          placeholder="Enter your phone number"
-          value={formData.phoneNumber}
-          onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-          icon={Phone}
-          error={errors.phoneNumber}
-          required
-        />
-
-        {/* Contact Info */}
-        <div className="md:col-span-2 lg:col-span-2">
-          <Input
-            label="Email Address"
-            type="email"
-            placeholder="Enter your email"
-            value={formData.email}
-            onChange={(e) => handleInputChange('email', e.target.value)}
-            icon={Mail}
-            error={errors.email}
-            required
-          />
-        </div>
-
-        {/* Extra Services */}
-        <div className="md:col-span-2 lg:col-span-3">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">
-              Extra Services
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              {serviceOptions.map((service) => (
-                <label key={service.value} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.extraServices.includes(service.value)}
-                    onChange={(e) => {
-                      const currentServices = formData.extraServices.split(',').filter(s => s.trim());
-                      let newServices;
-                      if (e.target.checked) {
-                        newServices = [...currentServices, service.value];
-                      } else {
-                        newServices = currentServices.filter(s => s !== service.value);
-                      }
-                      handleInputChange('extraServices', newServices.join(','));
-                    }}
-                    className="rounded border-gray-600 text-gold-500 focus:ring-gold-500 focus:ring-offset-gray-900"
-                  />
-                  <span className="text-sm text-gray-300">{service.label}</span>
-                </label>
+          {/* Search Results Dropdown */}
+          {searchState.showResults && searchState.results.length > 0 && !searchState.apiKeyError && (
+            <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+              {searchState.results.map((place, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => handleSearchResultSelect(type, place)}
+                  className="w-full text-left p-3 hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-b-0"
+                >
+                  <div className="text-white font-medium text-sm">{place.name}</div>
+                  <div className="text-gray-400 text-xs mt-1 line-clamp-2">{place.formatted_address}</div>
+                </button>
               ))}
             </div>
-          </div>
+          )}
+
+          {/* API Key Error Message */}
+          {searchState.apiKeyError && (
+            <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-3">
+              <div className="text-yellow-400 text-sm">
+                ⚠️ Location search is currently unavailable. Please use the map picker button.
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Special Requests */}
-        <div className="md:col-span-2 lg:col-span-3">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">
-              Special Requests
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-start pt-3 pointer-events-none">
-                <MessageCircle className="h-5 w-5 text-gray-400" />
-              </div>
-              <textarea
-                placeholder="Any special requirements or requests..."
-                value={formData.specialRequests}
-                onChange={(e) => handleInputChange('specialRequests', e.target.value)}
-                rows={3}
-                className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-colors resize-none"
+        {/* Error Message */}
+        {error && (
+          <p className="text-red-400 text-sm">{error}</p>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="max-w-full">
+      <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+        
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 sm:p-8 border-b border-gray-700">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="p-2 bg-gold-500/20 rounded-lg">
+              <Car className="h-6 w-6 text-gold-500" />
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white">Book Your Ride</h2>
+          </div>
+          <p className="text-gray-400 text-sm sm:text-base">
+            Complete the form below to request your luxury transportation
+          </p>
+        </div>
+
+        <div className="p-6 sm:p-8 space-y-8">
+          
+          {/* Trip Type & Round Trip Indicator */}
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Select
+                label="Trip Type"
+                options={tripOptions}
+                value={formData.tripType}
+                onChange={(e) => handleInputChange('tripType', e.target.value)}
+                placeholder="Select Trip Type"
+                error={errors.tripType}
+                required
+              />
+              <Select
+                label="Vehicle Type"
+                options={vehicleOptions}
+                value={formData.vehicleType}
+                onChange={(e) => handleInputChange('vehicleType', e.target.value)}
+                placeholder="Select Vehicle"
+                icon={Car}
+                error={errors.vehicleType}
+                required
               />
             </div>
+            
+            <RoundTripIndicator />
+          </div>
+
+          {/* Location Section */}
+          <div className="space-y-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-blue-500/20 rounded-lg">
+                <Route className="h-5 w-5 text-blue-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Journey Details</h3>
+            </div>
+            
+            <div className="bg-gray-800/30 border border-gray-700 rounded-xl p-4 sm:p-6 space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <LocationInput
+                  label="Pickup Address"
+                  placeholder="Search pickup location..."
+                  value={formData.pickupAddress}
+                  error={errors.pickupAddress}
+                  required
+                  onPickerOpen={() => openLocationPicker('pickup')}
+                  type="pickup" 
+                />
+
+                <LocationInput
+                  label="Drop-off Address"
+                  placeholder="Search drop-off location..."
+                  value={formData.dropoffAddress}
+                  error={errors.dropoffAddress}
+                  required
+                  onPickerOpen={() => openLocationPicker('dropoff')}
+                  type="dropoff"
+                />
+              </div>
+
+              {/* Swap Locations Button */}
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={swapLocations}
+                  className="flex items-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg transition-all duration-200 group"
+                  title="Swap pickup and drop-off locations"
+                >
+                  <ArrowRightLeft className="h-4 w-4 group-hover:rotate-180 transition-transform duration-300" />
+                  <span className="text-sm font-medium">Swap Locations</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Date & Time Section */}
+          <div className="space-y-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-green-500/20 rounded-lg">
+                <Calendar className="h-5 w-5 text-green-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Schedule</h3>
+            </div>
+            
+            <div className="bg-gray-800/30 border border-gray-700 rounded-xl p-4 sm:p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* Outbound Journey */}
+                <div className="space-y-4">
+                  <h4 className="text-lg font-medium text-gray-300 border-b border-gray-700 pb-2">
+                    {isRoundTrip ? 'Outbound Journey' : 'Journey Date & Time'}
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      label="Date"
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => handleInputChange('date', e.target.value)}
+                      icon={Calendar}
+                      error={errors.date}
+                      min={new Date().toISOString().split('T')[0]}
+                      required
+                    />
+                    <Input
+                      label="Time"
+                      type="time"
+                      value={formData.time}
+                      onChange={(e) => handleInputChange('time', e.target.value)}
+                      icon={Clock}
+                      error={errors.time}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Return Journey */}
+                {isRoundTrip && (
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-medium text-gray-300 border-b border-gray-700 pb-2">
+                      Return Journey
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        label="Return Date"
+                        type="date"
+                        value={formData.returnDate}
+                        onChange={(e) => handleInputChange('returnDate', e.target.value)}
+                        icon={Calendar}
+                        error={errors.returnDate}
+                        min={formData.date || new Date().toISOString().split('T')[0]}
+                        required
+                      />
+                      <Input
+                        label="Return Time"
+                        type="time"
+                        value={formData.returnTime}
+                        onChange={(e) => handleInputChange('returnTime', e.target.value)}
+                        icon={Clock}
+                        error={errors.returnTime}
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Information Section */}
+          <div className="space-y-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-purple-500/20 rounded-lg">
+                <Phone className="h-5 w-5 text-purple-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Contact Information</h3>
+            </div>
+            
+            <div className="bg-gray-800/30 border border-gray-700 rounded-xl p-4 sm:p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Input
+                  label="Phone Number"
+                  type="tel"
+                  placeholder="Enter your phone number"
+                  value={formData.phoneNumber}
+                  onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                  icon={Phone}
+                  error={errors.phoneNumber}
+                  required
+                />
+                
+                <div className="lg:col-span-2">
+                  <Input
+                    label="Email Address"
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    icon={Mail}
+                    error={errors.email}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Options Section */}
+          <div className="space-y-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-orange-500/20 rounded-lg">
+                <Settings className="h-5 w-5 text-orange-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Additional Options</h3>
+            </div>
+            
+            <div className="bg-gray-800/30 border border-gray-700 rounded-xl p-4 sm:p-6 space-y-6">
+              
+              {/* Passengers */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Select
+                  label="Number of Passengers"
+                  options={passengerOptions}
+                  value={formData.passengers}
+                  onChange={(e) => handleInputChange('passengers', e.target.value)}
+                  icon={Users}
+                />
+              </div>
+
+              {/* Extra Services */}
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-300">
+                  Extra Services
+                  <span className="text-gray-500 font-normal ml-2">(Optional)</span>
+                </label>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {serviceOptions.map((service) => (
+                    <label 
+                      key={service.value} 
+                      className="group relative flex items-center p-4 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-700/50 hover:border-gold-500/50 transition-all duration-200 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.extraServices.includes(service.value)}
+                        onChange={(e) => {
+                          const currentServices = formData.extraServices.split(',').filter(s => s.trim());
+                          let newServices;
+                          if (e.target.checked) {
+                            newServices = [...currentServices, service.value];
+                          } else {
+                            newServices = currentServices.filter(s => s !== service.value);
+                          }
+                          handleInputChange('extraServices', newServices.join(','));
+                        }}
+                        className="sr-only"
+                      />
+                      
+                      {/* Custom Checkbox */}
+                      <div className={`flex-shrink-0 w-5 h-5 border-2 rounded-md transition-all duration-200 mr-3 ${
+                        formData.extraServices.includes(service.value)
+                          ? 'border-gold-500 bg-gold-500'
+                          : 'border-gray-600 group-hover:border-gold-500/70'
+                      }`}>
+                        {formData.extraServices.includes(service.value) && (
+                          <svg className="w-3 h-3 text-black m-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                      
+                      {/* Service Label */}
+                      <span className={`text-sm font-medium transition-colors duration-200 ${
+                        formData.extraServices.includes(service.value)
+                          ? 'text-gold-300'
+                          : 'text-gray-300 group-hover:text-white'
+                      }`}>
+                        {service.label}
+                      </span>
+                      
+                      {/* Selected Indicator */}
+                      {formData.extraServices.includes(service.value) && (
+                        <div className="absolute top-2 right-2 w-2 h-2 bg-gold-500 rounded-full"></div>
+                      )}
+                    </label>
+                  ))}
+                </div>
+                
+                {/* Selected Services Summary */}
+                {formData.extraServices && formData.extraServices.length > 0 && (
+                  <div className="mt-4 p-4 bg-gold-500/10 border border-gold-500/30 rounded-xl">
+                    <div className="flex items-start space-x-3">
+                      <Star className="h-5 w-5 text-gold-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gold-300">Selected Services:</p>
+                        <p className="text-sm text-gold-200 mt-1">
+                          {formData.extraServices
+                            .split(',')
+                            .filter(s => s.trim())
+                            .map(serviceValue => 
+                              serviceOptions.find(opt => opt.value === serviceValue)?.label
+                            )
+                            .filter(Boolean)
+                            .join(', ')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Special Requests */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-300">
+                  Special Requests
+                  <span className="text-gray-500 font-normal ml-2">(Optional)</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-start pt-4 pointer-events-none">
+                    <MessageCircle className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <textarea
+                    placeholder="Any special requirements, dietary needs, accessibility requests, or other preferences..."
+                    value={formData.specialRequests}
+                    onChange={(e) => handleInputChange('specialRequests', e.target.value)}
+                    rows={4}
+                    className="w-full pl-12 pr-4 py-4 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-all duration-200 resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div className="pt-6 border-t border-gray-700">
+            <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
+              <Button
+                onClick={handleSubmit}
+                size="xl"
+                disabled={loading}
+                className="w-full sm:w-auto min-w-[320px] bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-black font-semibold py-4 px-8 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                {loading ? (
+                  <div className="flex items-center space-x-3">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Processing Your Request...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-3">
+                    <Car className="h-5 w-5" />
+                    <span>Calculate Price & Continue</span>
+                  </div>
+                )}
+              </Button>
+              
+              <p className="text-xs text-gray-500 text-center sm:text-left max-w-xs">
+                You'll receive a detailed quote before confirming your booking
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Submit Button */}
-      <div className="flex justify-center pt-4">
-        <Button
-          onClick={handleSubmit}
-          size="xl"
-          disabled={loading}
-          className="w-full sm:w-auto min-w-[280px] bg-gradient-to-r from-gold-600 to-gold-500 hover:from-gold-500 hover:to-gold-400 text-black font-semibold py-4 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? (
-            <div className="flex items-center space-x-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <span>Processing...</span>
-            </div>
-          ) : (
-            'Calculate Price & Continue'
-          )}
-        </Button>
       </div>
 
       {/* Location Picker Modal */}

@@ -100,13 +100,11 @@ const InstantBooking = ({ preSelectedCar }) => {
             </div>
             
             {/* Booking Form Container */}
-            <div className="bg-gray-800/40 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 shadow-2xl border border-gray-700/50 hover:border-gray-600/50 transition-all duration-300">
               <BookingPage
                 onSubmit={handleBookingSubmit} 
                 loading={loading}
                 preSelectedVehicle={preSelectedCar}
               />
-            </div>
 
             {/* Bottom Info */}
             <div className="text-center mt-8 sm:mt-12">
