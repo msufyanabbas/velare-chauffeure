@@ -373,59 +373,6 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
       }
   };
 
-  // Handle search result selection
-  const handleSearchResultSelect = (type, place) => {
-    const addressField = type === 'pickup' ? 'pickupAddress' : 'dropoffAddress';
-    const locationField = type === 'pickup' ? 'pickupLocation' : 'dropoffLocation';
-    
-    // Create location object with coordinates
-    const locationObject = {
-      displayAddress: place.name,
-      fullAddress: place.formatted_address,
-      coordinates: {
-        lat: place.geometry.location.lat(),
-        lng: place.geometry.location.lng()
-      },
-      placeId: place.place_id,
-      name: place.name,
-      isCoordinateOnly: false,
-      source: 'search',
-      timestamp: Date.now()
-    };
-
-    // Update form data
-    setFormData(prev => ({
-      ...prev,
-      [addressField]: place.name,
-      [locationField]: locationObject
-    }));
-
-    // Hide search results
-    setSearchStates(prev => ({
-      ...prev,
-      [type]: {
-        ...prev[type],
-        showResults: false,
-        results: []
-      }
-    }));
-
-    // Clear error
-    if (errors[addressField]) {
-      setErrors(prev => ({
-        ...prev,
-        [addressField]: ''
-      }));
-    }
-
-    // Focus next input for better UX
-    setTimeout(() => {
-      if (type === 'pickup' && searchInputRefs.current.dropoff) {
-        searchInputRefs.current.dropoff.focus();
-      }
-    }, 100);
-  };
-
   // Fixed input blur - longer timeout to prevent premature hiding
   const handleInputBlur = (type) => {
     setTimeout(() => {
@@ -499,10 +446,85 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
     });
   };
 
+  const handleTextLocationSelect = (locationData, type) => {
+  if (!locationData || !type) {
+      console.error('Invalid location data or type');
+      return;
+    }
+    
+    try {
+      // Validate coordinates
+      const hasValidCoordinates = locationData.coordinates && 
+        typeof locationData.coordinates.lat === 'number' && 
+        typeof locationData.coordinates.lng === 'number' &&
+        !isNaN(locationData.coordinates.lat) && 
+        !isNaN(locationData.coordinates.lng) &&
+        Math.abs(locationData.coordinates.lat) <= 90 &&
+        Math.abs(locationData.coordinates.lng) <= 180;
+
+      if (!hasValidCoordinates) {
+        console.error('Invalid coordinates received:', locationData.coordinates);
+        return;
+      }
+
+      // Create clean display address
+      const displayAddress = getDisplayAddress(locationData);
+      
+      // Create standardized location object
+      const locationObject = {
+        displayAddress,
+        fullAddress: locationData.fullAddress || displayAddress,
+        coordinates: {
+          lat: Number(locationData.coordinates.lat),
+          lng: Number(locationData.coordinates.lng)
+        },
+        placeId: locationData.placeId || null,
+        name: locationData.name || null,
+        isCoordinateOnly: Boolean(locationData.isCoordinateOnly),
+        addressComponents: locationData.addressComponents || null,
+        source: 'map_picker',
+        timestamp: Date.now()
+      };
+
+      // Update form data based on type
+      if (type === 'pickup') {
+        setFormData(prev => ({
+          ...prev,
+          pickupAddress: displayAddress,
+          pickupLocation: locationObject
+        }));
+        
+        // Clear pickup error
+        if (errors.pickupAddress) {
+          setErrors(prev => ({
+            ...prev,
+            pickupAddress: ''
+          }));
+        }
+      } else if (type === 'dropoff') {
+        setFormData(prev => ({
+          ...prev,
+          dropoffAddress: displayAddress,
+          dropoffLocation: locationObject
+        }));
+        
+        // Clear dropoff error
+        if (errors.dropoffAddress) {
+          setErrors(prev => ({
+            ...prev,
+            dropoffAddress: ''
+          }));
+        }
+      }
+
+      closeLocationPicker();
+    } catch (error) {
+      console.error('Error processing location selection:', error);
+    }
+  }
   // Enhanced location handling with better error handling and validation
   const handleLocationSelect = (locationData) => {
     const { type } = locationPicker;
-    
     if (!locationData || !type) {
       console.error('Invalid location data or type');
       return;
@@ -893,37 +915,48 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
   }, []);
 
   // Handle search result selection
-  const handleSearchResultSelect = useCallback((place) => {
-    const displayAddress = place.name || place.formatted_address;
-    
-    setLocalValue(displayAddress);
-    setShowResults(false);
-    
-    // Call parent callbacks
-    if (onChange) {
-      onChange(displayAddress);
-    }
-    
-    if (onLocationSelect) {
+  const handleSearchResultSelect = (place) => {
+     try {
+      let location;
+      // Handle both old and new API response formats
+      if (place.geometry && place.geometry.location) {
+        // Old API format
+        location = {
+          lat: typeof place.geometry.location.lat === 'function' 
+            ? place.geometry.location.lat() 
+            : place.geometry.location.lat,
+          lng: typeof place.geometry.location.lng === 'function' 
+            ? place.geometry.location.lng() 
+            : place.geometry.location.lng
+        };
+      } else if (place.location) {
+        // New API format
+        location = {
+          lat: place.location.lat,
+          lng: place.location.lng
+        };
+      } else {
+        throw new Error('Invalid place object');
+      }
+
       const locationData = {
-        displayAddress: displayAddress,
+        displayAddress: place.name || place.formatted_address,
         fullAddress: place.formatted_address,
-        coordinates: {
-          lat: place.geometry.location.lat,
-          lng: place.geometry.location.lng
-        },
+        coordinates: location,
         placeId: place.place_id,
         name: place.name,
         isCoordinateOnly: false
       };
-      onLocationSelect(locationData);
+
+       onLocationSelect(locationData);
+    } catch (error) {
+      console.error('Error selecting search result:', error);
     }
-    
     // Keep focus on input
     if (inputRef.current) {
       inputRef.current.focus();
     }
-  }, [onChange, onLocationSelect]);
+  };
 
   // Clear search
   const clearSearch = useCallback(() => {
@@ -1132,9 +1165,10 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
                   placeholder="Search pickup location..."
                   value={formData.pickupAddress}
                   error={errors.pickupAddress}
+                  onLocationSelect={(locationData) => handleTextLocationSelect(locationData, 'pickup')}
                   required
                   onPickerOpen={() => openLocationPicker('pickup')}
-                  type="pickup" 
+                  type="pickup"
                 />
 
                 <LocationInput
@@ -1142,10 +1176,11 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
                   placeholder="Search drop-off location..."
                   value={formData.dropoffAddress}
                   error={errors.dropoffAddress}
+                  onLocationSelect={(locationData) => handleTextLocationSelect(locationData, 'dropoff')}
                   required
                   onPickerOpen={() => openLocationPicker('dropoff')}
                   type="dropoff"
-                />
+                  />
               </div>
 
               {/* Swap Locations Button */}
