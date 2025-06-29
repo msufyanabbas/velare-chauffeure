@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     const bookingData = req.body;
     
     // Generate booking ID
-    const bookingId = 'VEL-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    // const bookingId = 'VEL-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
     
     console.log('bookingData in dust is ', bookingData);
     // Create booking record
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     
     res.status(201).json({
       success: true,
-      bookingId,
+      bookingId: bookingData.bookingId,
       message: 'Booking created successfully'
     });
     

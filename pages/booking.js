@@ -632,7 +632,7 @@ const BookingPage = ({preSelectedVehicle}) => {
 
           {/* Step 2: Price Review */}
           {step === 2 && bookingData && priceData && (
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-full mx-auto">
               <div className="space-y-6">
                 {renderBookingSummary()}
                 {renderPriceBreakdown()}
@@ -667,7 +667,7 @@ const BookingPage = ({preSelectedVehicle}) => {
 
           {/* Step 3: Payment */}
           {step === 3 && bookingData && priceData && (
-            <div className="max-w-6xl mx-auto">
+            <div className="max-w-full mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Left Column - Summary */}
                 <div className="space-y-6">

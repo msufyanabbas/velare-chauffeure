@@ -108,7 +108,7 @@ const BookingSchema = new mongoose.Schema({
   paymentStatus: {
     type: String,
     enum: {
-      values: ['pre_authorized', 'pending', 'paid', 'failed', 'refunded'],
+      values: ['pre_authorized', 'pending', 'paid', 'failed', 'refunded', 'completed'],
       message: '{VALUE} is not a valid payment status'
     },
     default: 'pending',
@@ -120,6 +120,42 @@ const BookingSchema = new mongoose.Schema({
   paymentMethod: {
     type: String,
   },
+  
+  // === POST-RIDE CHARGES FIELDS ===
+  additionalCharges: {
+    extraStops: {
+      type: Number,
+      default: 0
+    },
+    waitingTime: {
+      type: Number,
+      default: 0
+    },
+    tolls: {
+      type: Number,
+      default: 0
+    },
+    extraServices: {
+      type: Number,
+      default: 0
+    },
+    other: {
+      type: Number,
+      default: 0
+    }
+  },
+  customChargeDescription: {
+    type: String,
+    default: ''
+  },
+  finalTotal: {
+    type: Number
+  },
+  completedAt: {
+    type: Date
+  },
+  // === END POST-RIDE CHARGES FIELDS ===
+  
   // Location metadata
   locationMetadata: {
     pickup: {

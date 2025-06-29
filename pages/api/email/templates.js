@@ -12,7 +12,7 @@ export const emailTemplates = {
         </div>
 
         <div style="background: #f9f9f9; padding: 25px; border-radius: 8px; margin-bottom: 25px;">
-          <h2 style="color: #333; margin-top: 0;">Hi ${data.customerName},</h2>
+          <h2 style="color: #333; margin-top: 0;">Hi ${data.email},</h2>
           <p>Thank you for choosing our service! Your ride has been completed successfully.</p>
           <p>We have pre-authorized your payment method for the base fare. To complete the transaction, please review and pay for any additional charges that may have occurred during your ride.</p>
           
