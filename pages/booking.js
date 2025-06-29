@@ -265,7 +265,7 @@ const BookingPage = ({preSelectedVehicle}) => {
             <span className="text-white font-medium capitalize">{bookingData.vehicleType}</span>
           </div>
           
-          {/* NEW: Service Type Display */}
+          {/* Service Type Display */}
           <div className="flex justify-between items-center py-2 border-b border-gray-800">
             <span className="text-gray-400">Service Type:</span>
             <span className="text-white font-medium capitalize">
@@ -304,53 +304,8 @@ const BookingPage = ({preSelectedVehicle}) => {
                   {priceData.durationText || `${priceData.duration} minutes`}
                 </span>
               </div>
-              
-              {/* NEW: Peak Time Indicator */}
-              {/* {priceData.isPeakTime && (
-                <div className="flex justify-between items-center py-2 border-b border-gray-800">
-                  <span className="text-gray-400">Peak Time:</span>
-                  <span className="text-orange-400 font-medium flex items-center">
-                    <span className="w-2 h-2 bg-orange-400 rounded-full mr-2"></span>
-                    Weekend/Friday (+15%)
-                  </span>
-                </div>
-              )} */}
-
-              {/* NEW: Airport Trip Indicator */}
-              {/* {priceData.isAirportTrip && (
-                <div className="flex justify-between items-center py-2 border-b border-gray-800">
-                  <span className="text-gray-400">Airport Service:</span>
-                  <span className="text-blue-400 font-medium flex items-center">
-                    <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
-                    Airport Fee Applied
-                  </span>
-                </div>
-              )} */}
-
-              {/* Toll Information */}
-              {/* {priceData.tolls > 0 && (
-                <div className="flex justify-between items-center py-2 border-b border-gray-800">
-                  <span className="text-gray-400">Est. Tolls:</span>
-                  <span className="text-white font-medium">{formatCurrency(priceData.tolls)}</span>
-                </div>
-              )} */}
             </>
           )}
-          
-          {/* NEW: Additional Services/Fees */}
-          {/* {bookingData.waitingTime && bookingData.waitingTime > 0 && (
-            <div className="flex justify-between items-center py-2 border-b border-gray-800">
-              <span className="text-gray-400">Waiting Time:</span>
-              <span className="text-white font-medium">{bookingData.waitingTime} minutes</span>
-            </div>
-          )} */}
-
-          {/* {bookingData.additionalStops && bookingData.additionalStops > 0 && (
-            <div className="flex justify-between items-center py-2 border-b border-gray-800">
-              <span className="text-gray-400">Additional Stops:</span>
-              <span className="text-white font-medium">{bookingData.additionalStops}</span>
-            </div>
-          )} */}
 
           {bookingData.carDecoration && priceData?.serviceType === 'events' && (
             <div className="flex justify-between items-center py-2 border-b border-gray-800">
@@ -412,7 +367,7 @@ const BookingPage = ({preSelectedVehicle}) => {
     );
   };
 
-  // NEW: Render detailed price breakdown
+  // Render simplified price breakdown with only essential charges
   const renderPriceBreakdown = () => {
     if (!priceData) return null;
 
@@ -433,17 +388,17 @@ const BookingPage = ({preSelectedVehicle}) => {
           </div>
 
           {/* Distance Charges */}
-          {priceData.kmCharges  && (
+          {/* {priceData.kmCharges && ( */}
             <div className="flex justify-between items-center py-2 border-b border-gray-800">
               <span className="text-gray-400">
-                Distance Charges
+                Distance Charges (per KM)
                 <span className="text-xs block text-gray-500">
-                  {priceData.priceBreakdown?.distanceInfo}
+                  {priceData.priceBreakdown?.distanceInfo && priceData.priceBreakdown?.distanceInfo}
                 </span>
               </span>
               <span className="text-white font-medium">{formatCurrency(priceData.kmCharges)}</span>
             </div>
-          )}
+          {/* )} */}
 
           {/* Time Charges */}
           {priceData.timeCharges > 0 && (
@@ -457,43 +412,6 @@ const BookingPage = ({preSelectedVehicle}) => {
               <span className="text-white font-medium">{formatCurrency(priceData.timeCharges)}</span>
             </div>
           )}
-
-          {/* Peak Time Surcharge */}
-          {/* {priceData.peakSurcharge > 0 && (
-            <div className="flex justify-between items-center py-2 border-b border-gray-800">
-              <span className="text-orange-400">
-                Peak Time Surcharge (15%)
-                <span className="text-xs block text-orange-300">
-                  {priceData.priceBreakdown?.peakTimeInfo}
-                </span>
-              </span>
-              <span className="text-orange-400 font-medium">+{formatCurrency(priceData.peakSurcharge)}</span>
-            </div>
-          )} */}
-
-          {/* Additional Fees */}
-          {priceData.additionalFees > 0 && (
-            <div className="flex justify-between items-start py-2 border-b border-gray-800">
-              <div className="text-gray-400">
-                Additional Fees
-                <div className="text-xs text-gray-500 mt-1 space-y-1">
-                  {/* {priceData.isAirportTrip && <div>• Airport service fee</div>}
-                  {bookingData.waitingTime > 0 && <div>• Waiting time fee</div>}
-                  {bookingData.additionalStops > 0 && <div>• Extra stops fee</div>} */}
-                  {bookingData.carDecoration && <div>• Event decoration fee</div>}
-                </div>
-              </div>
-              <span className="text-white font-medium">{formatCurrency(priceData.additionalFees)}</span>
-            </div>
-          )}
-
-          {/* Tolls */}
-          {/* {priceData.tolls > 0 && (
-            <div className="flex justify-between items-center py-2 border-b border-gray-800">
-              <span className="text-gray-400">Estimated Tolls</span>
-              <span className="text-white font-medium">{formatCurrency(priceData.tolls)}</span>
-            </div>
-          )} */}
 
           {/* Subtotal */}
           <div className="flex justify-between items-center py-2 border-b border-gray-800 font-semibold">
