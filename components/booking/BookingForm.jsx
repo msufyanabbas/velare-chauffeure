@@ -118,10 +118,7 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
   ];
 
   const serviceOptions = [
-    { value: 'wifi', label: 'WiFi' },
-    { value: 'refreshments', label: 'Refreshments' },
-    { value: 'newspapers', label: 'Newspapers' },
-    { value: 'child-seat', label: 'Child Seat' },
+    { value: 'child-seat', label: 'Child Seat' }
   ];
 
   const passengerOptions = Array.from({ length: 8 }, (_, i) => ({
