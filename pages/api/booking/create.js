@@ -15,7 +15,6 @@ export default async function handler(req, res) {
     // Generate booking ID
     // const bookingId = 'VEL-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
     
-    console.log('bookingData in dust is ', bookingData);
     // Create booking record
     const booking = new Booking({
       ...bookingData,

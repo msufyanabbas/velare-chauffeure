@@ -2,28 +2,34 @@
 
 export const emailTemplates = {
   // Post-ride completion template
-  postRideCompletion: (data) => ({
-    subject: 'Complete Your Payment - Ride Completed',
+ postRideCompletion: (data) => ({
+    subject: 'Action Required - Complete User Payment Processing',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 30px;">
-          <h1 style="margin: 0; font-size: 28px; color: #ffd700;">Your Ride is Complete!</h1>
-          <p style="margin: 10px 0 0 0; font-size: 16px; color: #ccc;">Please complete your final payment</p>
+          <h1 style="margin: 0; font-size: 28px; color: #ffd700;">Ride Completed - Payment Action Required</h1>
+          <p style="margin: 10px 0 0 0; font-size: 16px; color: #ccc;">User payment processing needed</p>
         </div>
 
         <div style="background: #f9f9f9; padding: 25px; border-radius: 8px; margin-bottom: 25px;">
-          <h2 style="color: #333; margin-top: 0;">Hi ${data.email},</h2>
-          <p>Thank you for choosing our service! Your ride has been completed successfully.</p>
-          <p>We have pre-authorized your payment method for the base fare. To complete the transaction, please review and pay for any additional charges that may have occurred during your ride.</p>
+          <h2 style="color: #333; margin-top: 0;">Admin Action Required</h2>
+          <p>A ride has been completed and requires final payment processing for the customer.</p>
+          <p>The customer's payment method has been pre-authorized for the base fare. Please review and process any additional charges that occurred during the ride.</p>
           
           <div style="background: white; padding: 20px; border-radius: 5px; border-left: 4px solid #ffd700; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #333;">Booking Details:</h3>
+            <h3 style="margin-top: 0; color: #333;">Customer & Booking Details:</h3>
+            <p><strong>Customer Email:</strong> ${data.email}</p>
+            <p><strong>Customer Phone:</strong> ${data.phoneNumber}</p>
             <p><strong>Booking ID:</strong> ${data.bookingId}</p>
-            ${data.bookingDetails ? `
-              <p><strong>Date:</strong> ${data.bookingDetails.date}</p>
-              <p><strong>Route:</strong> ${data.bookingDetails.pickup} → ${data.bookingDetails.dropoff}</p>
-              <p><strong>Pre-authorized Amount:</strong> $${data.bookingDetails.amount}</p>
-            ` : ''}
+            <p><strong>Date & Time:</strong> ${data.date} at ${data.time}</p>
+            <p><strong>Route:</strong> ${data.pickupAddress} → ${data.dropoffAddress}</p>
+            <p><strong>Vehicle Type:</strong> ${data.vehicleType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+            <p><strong>Passengers:</strong> ${data.passengers}</p>
+            <p><strong>Total Price:</strong> ${data.totalPrice}</p>
+            <p><strong>Base Price:</strong> ${data.basePrice}</p>
+            <p><strong>Payment Status:</strong> ${data.paymentStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+            <p><strong>Payment Intent ID:</strong> ${data.paymentIntentId}</p>
+            ${data.specialRequests ? `<p><strong>Special Requests:</strong> ${data.specialRequests}</p>` : ''}
           </div>
         </div>
 
@@ -38,48 +44,54 @@ export const emailTemplates = {
                     font-size: 16px;
                     display: inline-block;
                     box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);">
-            Complete Final Payment
+            Process Final Payment
           </a>
         </div>
 
         <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <p style="margin: 0; color: #856404;"><strong>⏰ Important:</strong> Please complete your payment within 7 days to avoid any issues with your booking.</p>
+          <p style="margin: 0; color: #856404;"><strong>⏰ Important:</strong> Please process this payment within 7 days to avoid any issues with the customer's booking.</p>
         </div>
 
         <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px; font-size: 14px; color: #666;">
-          <p><strong>Need Help?</strong></p>
-          <p>If you have any questions about your ride or this payment, please contact our support team.</p>
+          <p><strong>Admin Notes:</strong></p>
+          <p>Use the link above to access the payment processing interface for this completed ride.</p>
           <p>This link will expire in 7 days for security purposes.</p>
         </div>
 
         <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #888; font-size: 12px;">
-          <p>This is an automated message. Please do not reply to this email.</p>
+          <p>This is an automated admin notification. Please do not reply to this email.</p>
         </div>
       </div>
     `,
     text: `
-Hi ${data.customerName},
+Admin Action Required - Ride Payment Processing
 
-Thank you for choosing our service! Your ride has been completed successfully.
+A ride has been completed and requires final payment processing for the customer.
 
-We have pre-authorized your payment method for the base fare. To complete the transaction, please review and pay for any additional charges that may have occurred during your ride.
+The customer's payment method has been pre-authorized for the base fare. Please review and process any additional charges that occurred during the ride.
 
-Booking Details:
+Customer & Booking Details:
+- Customer Email: ${data.email}
+- Customer Phone: ${data.phoneNumber}
 - Booking ID: ${data.bookingId}
-${data.bookingDetails ? `- Date: ${data.bookingDetails.date}
-- Route: ${data.bookingDetails.pickup} → ${data.bookingDetails.dropoff}
-- Pre-authorized Amount: $${data.bookingDetails.amount}` : ''}
+- Date & Time: ${data.date} at ${data.time}
+- Route: ${data.pickupAddress} → ${data.dropoffAddress}
+- Vehicle Type: ${data.vehicleType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+- Passengers: ${data.passengers}
+- Total Price: ${data.totalPrice}
+- Base Price: ${data.basePrice}
+- Payment Status: ${data.paymentStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+${data.specialRequests ? `- Special Requests: ${data.specialRequests}` : ''}
 
-Complete your final payment here: ${data.postRideLink}
+Process the final payment here: ${data.postRideLink}
 
-IMPORTANT: Please complete your payment within 7 days to avoid any issues with your booking.
+IMPORTANT: Please process this payment within 7 days to avoid any issues with the customer's booking.
 
-Need Help?
-If you have any questions about your ride or this payment, please contact our support team.
-
+Admin Notes:
+Use the link above to access the payment processing interface for this completed ride.
 This link will expire in 7 days for security purposes.
 
-This is an automated message. Please do not reply to this email.
+This is an automated admin notification. Please do not reply to this email.
     `
   }),
 

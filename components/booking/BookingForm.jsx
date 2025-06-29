@@ -49,7 +49,6 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
   // Enhanced useEffect to handle preSelectedVehicle changes
   useEffect(() => {
     if (preSelectedVehicle && preSelectedVehicle !== formData.vehicleType) {
-      console.log('Setting preSelectedVehicle:', preSelectedVehicle);
       setFormData(prev => ({
         ...prev,
         vehicleType: preSelectedVehicle

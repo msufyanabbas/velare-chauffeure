@@ -11,9 +11,6 @@ export default async function handler(req, res) {
   try {
     const { bookingId, paymentIntentId } = req.body;
 
-    console.log('bookingId in the body is', bookingId);
-    console.log('payment Intent is ', paymentIntentId);
-
     if (!bookingId || !paymentIntentId) {
       return res.status(400).json({
         success: false,
@@ -30,8 +27,6 @@ export default async function handler(req, res) {
         error: 'Payment intent not found'
       });
     }
-    console.log('paymentIntent.meta is', paymentIntent.metadata.bookingId);
-
     // Check if the payment intent belongs to this booking
     if (paymentIntent.metadata.bookingId !== bookingId.toString()) {
       return res.status(400).json({

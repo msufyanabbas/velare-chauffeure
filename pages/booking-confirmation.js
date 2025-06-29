@@ -25,7 +25,6 @@ const BookingConfirmation = () => {
       const response = await fetch(`/api/booking/${bookingId}`);
       const data = await response.json();
       
-      console.log('data is', data);
       if (data.success) {
         setBookingDetails(data.booking);
       } else {

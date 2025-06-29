@@ -19,8 +19,6 @@ export default async function handler(req, res) {
 
     const booking = await Booking.findOne({ bookingId });
 
-    console.log('booking is', booking);
-
     if (!booking) {
       return res.status(404).json({
         success: false,

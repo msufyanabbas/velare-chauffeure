@@ -31,8 +31,6 @@ const InstantBooking = ({ preSelectedCar }) => {
       ...formData,
       vehicleType: selectedVehicle || formData.vehicleType
     };
-    console.log('Booking Data:', enhancedFormData);
-    
     setTimeout(() => {
       setLoading(false);
       alert('Booking submitted successfully!');

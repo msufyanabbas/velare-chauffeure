@@ -74,8 +74,6 @@ const CheckoutForm = ({ bookingData, priceData, onSuccess, onError }) => {
         setPaymentError(error.message);
       } else if (paymentIntent.status === 'requires_capture') {
         // Payment is held, now create booking with pre-auth status
-        console.log('Payment pre-authorized for booking:', bookingData);
-        
         const bookingResponse = await fetch('/api/booking/create', {
           method: 'POST',
           headers: {

@@ -4,8 +4,6 @@ import Card from '../ui/Card';
 
 const PriceCalculator = ({ bookingData, priceData }) => {
   if (!priceData) return null;
-  console.log('price Data is ', priceData);
-
   return (
     <Card variant="luxury" className="mt-8">
       <h3 className="text-xl font-serif text-white mb-4">Booking Summary</h3>
