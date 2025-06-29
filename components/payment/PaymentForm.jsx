@@ -8,6 +8,7 @@ import {
 } from '@stripe/react-stripe-js';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
+import {FaCcVisa, FaCcMastercard, FaCcApplePay} from 'react-icons/fa'
 import { formatCurrency } from '../../lib/utils';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
@@ -213,10 +214,19 @@ const CheckoutForm = ({ bookingData, priceData, onSuccess, onError }) => {
         {/* Payment Methods */}
         <div className="mt-6 pt-6 border-t border-gray-700">
           <p className="text-gray-400 text-sm text-center mb-4">We accept</p>
-          <div className="flex justify-center space-x-4">
-            <div className="text-white text-sm">💳 Visa</div>
-            <div className="text-white text-sm">💳 Mastercard</div>
-            <div className="text-white text-sm">🍎 Apple Pay</div>
+          <div className="flex justify-center items-center space-x-6">
+            <div className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors">
+              <FaCcVisa className="text-2xl" />
+              <span className="text-sm font-medium">Visa</span>
+            </div>
+            <div className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors">
+              <FaCcMastercard className="text-2xl" />
+              <span className="text-sm font-medium">Mastercard</span>
+            </div>
+            <div className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors">
+              <FaCcApplePay className="text-2xl" />
+              <span className="text-sm font-medium">Apple Pay</span>
+            </div>
           </div>
         </div>
       </Card>
