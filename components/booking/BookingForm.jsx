@@ -765,105 +765,310 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
 
   // Enhanced LocationInput component with better focus handling
  const LocationInput = ({ 
-    label, 
-    value, 
-    placeholder, 
-    error, 
-    required, 
-    onPickerOpen,
-    type
-  }) => {
-    const searchState = searchStates[type];
-    return (
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-300">
-          {label} {required && <span className="text-red-400">*</span>}
-        </label>
+  label, 
+  value, 
+  placeholder, 
+  error, 
+  required, 
+  onPickerOpen,
+  type,
+  onChange, // Make sure you pass this prop
+  onLocationSelect // Add this prop for when a location is selected
+}) => {
+  // Local state for search functionality
+  const [localValue, setLocalValue] = useState(value || '');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showResults, setShowResults] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState(false);
+  
+  // Refs
+  const inputRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
+  const dropdownRef = useRef(null);
+  
+  // Sync local value with prop value
+  useEffect(() => {
+    if (value !== localValue) {
+      setLocalValue(value || '');
+    }
+  }, [value]);
+
+  // Debounced search function
+  const searchLocations = useCallback(async (query) => {
+    if (!query || query.length < 3) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    
+    try {
+      // Check if Google Maps is available
+      if (!window.google || !window.google.maps) {
+        throw new Error('Google Maps not loaded');
+      }
+
+      const { Place } = await google.maps.importLibrary("places");
+      
+      const request = {
+        textQuery: query,
+        fields: ['displayName', 'formattedAddress', 'location', 'id'],
+        maxResultCount: 5
+      };
+
+      const { places } = await Place.searchByText(request);
+      
+      if (places && places.length > 0) {
+        const formattedResults = places.map(place => ({
+          name: place.displayName,
+          formatted_address: place.formattedAddress,
+          geometry: {
+            location: place.location
+          },
+          place_id: place.id
+        }));
         
+        setSearchResults(formattedResults);
+        setShowResults(true);
+        setApiKeyError(false);
+      } else {
+        setSearchResults([]);
+        setShowResults(false);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      setApiKeyError(true);
+      setSearchResults([]);
+      setShowResults(false);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  // Handle input change with debouncing
+  const handleInputChange = useCallback((e) => {
+    const newValue = e.target.value;
+    setLocalValue(newValue);
+    
+    // Call parent onChange immediately for form state
+    if (onChange) {
+      onChange(newValue);
+    }
+    
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Set new timeout for search
+    if (newValue.length > 2) {
+      searchTimeoutRef.current = setTimeout(() => {
+        searchLocations(newValue);
+      }, 300);
+    } else {
+      setSearchResults([]);
+      setShowResults(false);
+    }
+  }, [onChange, searchLocations]);
+
+  // Handle input focus
+  const handleInputFocus = useCallback(() => {
+    if (searchResults.length > 0 && localValue.length > 2) {
+      setShowResults(true);
+    }
+  }, [searchResults.length, localValue.length]);
+
+  // Handle input blur with delay to allow clicking on results
+  const handleInputBlur = useCallback((e) => {
+    // Use setTimeout to allow dropdown clicks to register
+    setTimeout(() => {
+      // Check if the new focused element is within our dropdown
+      if (dropdownRef.current && dropdownRef.current.contains(document.activeElement)) {
+        return; // Don't hide if focus is within dropdown
+      }
+      setShowResults(false);
+    }, 150);
+  }, []);
+
+  // Handle search result selection
+  const handleSearchResultSelect = useCallback((place) => {
+    const displayAddress = place.name || place.formatted_address;
+    
+    setLocalValue(displayAddress);
+    setShowResults(false);
+    
+    // Call parent callbacks
+    if (onChange) {
+      onChange(displayAddress);
+    }
+    
+    if (onLocationSelect) {
+      const locationData = {
+        displayAddress: displayAddress,
+        fullAddress: place.formatted_address,
+        coordinates: {
+          lat: place.geometry.location.lat,
+          lng: place.geometry.location.lng
+        },
+        placeId: place.place_id,
+        name: place.name,
+        isCoordinateOnly: false
+      };
+      onLocationSelect(locationData);
+    }
+    
+    // Keep focus on input
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [onChange, onLocationSelect]);
+
+  // Clear search
+  const clearSearch = useCallback(() => {
+    setLocalValue('');
+    setSearchResults([]);
+    setShowResults(false);
+    
+    if (onChange) {
+      onChange('');
+    }
+    
+    // Keep focus on input after clearing
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [onChange]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Handle clicks outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        inputRef.current && 
+        !inputRef.current.contains(event.target) &&
+        dropdownRef.current && 
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-300">
+        {label} {required && <span className="text-red-400">*</span>}
+      </label>
+      
+      <div className="relative">
+        {/* Search Input */}
         <div className="relative">
-          {/* Search Input */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          
+          <input
+            ref={inputRef}
+            type="text"
+            value={localValue}
+            onChange={handleInputChange}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
+            placeholder={apiKeyError ? "Search unavailable - use map" : placeholder}
+            autoComplete="off"
+            className={`w-full pl-10 pr-20 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-colors ${
+              error ? 'border-red-500' : 'border-gray-700'
+            }`}
+          />
+          
+          {/* Action Buttons */}
+          <div className="absolute inset-y-0 right-0 flex items-center space-x-1 pr-3">
+            {/* Loading Spinner */}
+            {isSearching && (
+              <div className="w-5 h-5 border-2 border-gold-500 border-t-transparent rounded-full animate-spin"></div>
+            )}
             
-            <input
-              ref={(el) => (searchInputRefs.current[type] = el)}
-              type="text"
-              value={value}
-              onChange={(e) => handleLocationSearch(type, e.target.value)}
-              onFocus={() => handleInputFocus(type)}
-              // onBlur={() => handleInputBlur(type)}
-              placeholder={searchState.apiKeyError ? "Search unavailable - use map" : placeholder}
-              className={`w-full pl-10 pr-20 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-colors ${
-                error ? 'border-red-500' : 'border-gray-700'
-              }`}
-            />
-            
-            {/* Action Buttons */}
-            <div className="absolute inset-y-0 right-0 flex items-center space-x-1 pr-3">
-              {/* Loading Spinner */}
-              {searchState.isSearching && (
-                <div className="w-5 h-5 border-2 border-gold-500 border-t-transparent rounded-full animate-spin"></div>
-              )}
-              
-              {/* Clear Button */}
-              {value && !searchState.isSearching && (
-                <button
-                  type="button"
-                  onClick={() => clearSearch(type)}
-                  className="p-1 text-gray-400 hover:text-white rounded transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-              
-              {/* Map Picker Button */}
+            {/* Clear Button */}
+            {localValue && !isSearching && (
               <button
                 type="button"
-                onClick={onPickerOpen}
-                className="p-1 text-gray-400 hover:text-gold-500 rounded transition-colors"
-                title="Choose on map"
+                onClick={clearSearch}
+                className="p-1 text-gray-400 hover:text-white rounded transition-colors"
+                tabIndex={-1} // Prevent focus stealing
               >
-                <MapPin className="h-4 w-4" />
+                <X className="h-4 w-4" />
               </button>
-            </div>
+            )}
+            
+            {/* Map Picker Button */}
+            <button
+              type="button"
+              onClick={onPickerOpen}
+              className="p-1 text-gray-400 hover:text-gold-500 rounded transition-colors"
+              title="Choose on map"
+              tabIndex={-1} // Prevent focus stealing
+            >
+              <MapPin className="h-4 w-4" />
+            </button>
           </div>
-
-          {/* Search Results Dropdown */}
-          {searchState.showResults && searchState.results.length > 0 && !searchState.apiKeyError && (
-            <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-64 overflow-y-auto">
-              {searchState.results.map((place, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => handleSearchResultSelect(type, place)}
-                  className="w-full text-left p-3 hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-b-0"
-                >
-                  <div className="text-white font-medium text-sm">{place.name}</div>
-                  <div className="text-gray-400 text-xs mt-1 line-clamp-2">{place.formatted_address}</div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* API Key Error Message */}
-          {searchState.apiKeyError && (
-            <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-3">
-              <div className="text-yellow-400 text-sm">
-                ⚠️ Location search is currently unavailable. Please use the map picker button.
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <p className="text-red-400 text-sm">{error}</p>
+        {/* Search Results Dropdown */}
+        {showResults && searchResults.length > 0 && !apiKeyError && (
+          <div 
+            ref={dropdownRef}
+            className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+          >
+            {searchResults.map((place, index) => (
+              <button
+                key={`${place.place_id}-${index}`}
+                type="button"
+                onClick={() => handleSearchResultSelect(place)}
+                onMouseDown={(e) => e.preventDefault()} // Prevent input blur
+                className="w-full text-left p-3 hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-b-0"
+              >
+                <div className="text-white font-medium text-sm">{place.name}</div>
+                <div className="text-gray-400 text-xs mt-1 line-clamp-2">{place.formatted_address}</div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* API Key Error Message */}
+        {showResults && apiKeyError && (
+          <div 
+            ref={dropdownRef}
+            className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-3"
+          >
+            <div className="text-yellow-400 text-sm">
+              ⚠️ Location search is currently unavailable. Please use the map picker button.
+            </div>
+          </div>
         )}
       </div>
-    );
-  };
+
+      {/* Error Message */}
+      {error && (
+        <p className="text-red-400 text-sm">{error}</p>
+      )}
+    </div>
+  );
+};
 
   return (
     <div className="max-w-full">
