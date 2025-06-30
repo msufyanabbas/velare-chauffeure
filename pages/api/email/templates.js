@@ -108,7 +108,7 @@ This is an automated admin notification. Please do not reply to this email.
         <div style="padding: 30px; background: white;">
           <h2 style="color: #1a1a1a; margin-bottom: 20px;">Booking Confirmation</h2>
           
-          <p>Dear ${data.email.split('@')[0]},</p>
+          <p>Dear Customer,</p>
           
           <p>Thank you for booking with Velaré. Your luxury chauffeur service has been confirmed.</p>
           
@@ -228,7 +228,7 @@ This is an automated admin notification. Please do not reply to this email.
         <div style="padding: 30px; background: white;">
           <h2 style="color: #1a1a1a; margin-bottom: 20px;">Booking Cancelled</h2>
           
-          <p>Dear ${data.customerName || data.email.split('@')[0]},</p>
+          <p>Dear Customer,</p>
           
           <p>Your booking has been cancelled as requested.</p>
           
@@ -268,7 +268,7 @@ This is an automated admin notification. Please do not reply to this email.
         <div style="padding: 30px; background: white;">
           <h2 style="color: #1a1a1a; margin-bottom: 20px;">Driver Assigned</h2>
           
-          <p>Dear ${data.customerName || data.email.split('@')[0]},</p>
+          <p>Dear Customer,</p>
           
           <p>Your chauffeur has been assigned for your upcoming trip.</p>
           
@@ -312,7 +312,7 @@ This is an automated admin notification. Please do not reply to this email.
         <div style="padding: 30px; background: white;">
           <h2 style="color: #1a1a1a; margin-bottom: 20px;">Booking Receipt</h2>
           
-          <p>Dear ${booking.customerName || 'Valued Customer'},</p>
+          <p>Dear 'Valued Customer',</p>
           
           <p>Thank you for your booking with Velaré Luxury Transportation. Here are your booking details:</p>
           
@@ -359,7 +359,7 @@ This is an automated admin notification. Please do not reply to this email.
         <div style="padding: 30px; background: white;">
           <h2 style="color: #1a1a1a; margin-bottom: 20px;">Welcome to Velaré!</h2>
           
-          <p>Dear ${data.name || data.email.split('@')[0]},</p>
+          <p>Dear Customer,</p>
           
           <p>Welcome to Velaré, where luxury meets reliability. We're thrilled to have you join our exclusive clientele.</p>
           
@@ -440,7 +440,7 @@ This is an automated admin notification. Please do not reply to this email.
         <div style="padding: 30px; background: white;">
           <h2 style="color: #1a1a1a; margin-bottom: 20px;">Thank You, ${data.name}</h2>
           
-          <p>Dear ${data.name},</p>
+          <p>Dear Customer,</p>
           
           <p>Thank you for contacting Velaré Chauffeurs. We have received your inquiry and will respond within 24 hours.</p>
           

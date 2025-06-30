@@ -15,7 +15,7 @@ export const sendConfirmationEmail = async (to, booking, type) => {
       <div style="padding: 30px; background: white;">
         <h2 style="color: #1a1a1a; margin-bottom: 20px;">Booking Confirmation</h2>
         
-        <p>Dear ${booking.email.split('@')[0]},</p>
+        <p>Dear Customer,</p>
         
         <p>Thank you for booking with Velaré. Your luxury chauffeur service has been confirmed.</p>
         
