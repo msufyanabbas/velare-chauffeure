@@ -218,7 +218,7 @@ export default async function handler(req, res) {
     doc.fillColor(colors.black)
        .fontSize(12)
        .font('Helvetica')
-       .text(`Dear ${customerName},`, margin, currentY);
+       .text(`Dear Customer,`, margin, currentY);
     
     currentY += 25;
 
