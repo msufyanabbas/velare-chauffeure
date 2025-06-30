@@ -307,7 +307,7 @@ export default async function handler(req, res) {
     doc.fillColor(colors.textGray)
        .fontSize(10)
        .font('Helvetica')
-       .text('Email: info@velare.com  •  Phone: +1 (555) 123-4567', 
+       .text('Email: info@velarechauffeurs.com.au  •  Phone: 1300 650 677', 
               margin, footerY + 15, { 
                 align: 'center', 
                 width: contentWidth 

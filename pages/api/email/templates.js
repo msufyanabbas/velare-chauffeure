@@ -124,7 +124,7 @@ This is an automated admin notification. Please do not reply to this email.
             <p><strong>Total:</strong> $${data.totalPrice}</p>
           </div>
           
-          <p>If you need to make any changes or have questions, please contact us at info@velare.com or call 1300 650 677</p>
+          <p>If you need to make any changes or have questions, please contact us at info@velarechauffeurs.com.au or call 1300 650 677</p>
           
           <p>Thank you for choosing Velaré.</p>
           
@@ -378,7 +378,7 @@ This is an automated admin notification. Please do not reply to this email.
             <a href="${data.loginLink || '#'}" style="background: #ffc107; color: #1a1a1a; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Book Your First Ride</a>
           </div>
           
-          <p>If you have any questions, please don't hesitate to contact us at info@velare.com or call +1 (555) 123-4567.</p>
+          <p>If you have any questions, please don't hesitate to contact us at info@velarechauffeurs.com.au or call 1300 650 677</p>
           
           <p style="margin-top: 30px; color: #666;">
             Best regards,<br>

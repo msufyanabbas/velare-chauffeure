@@ -31,7 +31,7 @@ export const sendConfirmationEmail = async (to, booking, type) => {
           <p><strong>Total:</strong> $${booking.totalPrice}</p>
         </div>
         
-        <p>If you need to make any changes or have questions, please contact us at info@velare.com or call 1300 650 677</p>
+        <p>If you need to make any changes or have questions, please contact us at info@velarechauffeurs.com.au or call 1300 650 677</p>
         
         <p>Thank you for choosing Velaré.</p>
         
