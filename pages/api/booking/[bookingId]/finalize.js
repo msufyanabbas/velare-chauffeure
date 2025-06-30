@@ -3,6 +3,287 @@ import dbConnect from '../../../../lib/db'; // Adjust path to your DB connection
 import Booking from '../../../../models/Booking'; // Adjust path to your Booking model
 import { sendCustomEmail, sendEmail, sendTemplatedEmail } from '../../../../lib/email'; // Add this import
 import { emailTemplates } from '../../../../pages/api/email/templates'; // Add this import
+import PDFDocument from 'pdfkit';
+
+// Helper function to generate PDF receipt
+async function generateReceiptPDF(booking) {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50
+      });
+      
+      const chunks = [];
+      doc.on('data', chunk => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+      
+      // Define colors with better contrast
+      const colors = {
+        darkGray: '#2c2c2c',
+        mediumGray: '#4a4a4a',
+        gold: '#d4af37',
+        white: '#ffffff',
+        lightGray: '#f5f5f5',
+        textGray: '#555555',
+        black: '#000000',
+        border: '#e0e0e0'
+      };
+
+      // Page dimensions
+      const pageWidth = doc.page.width;
+      const pageHeight = doc.page.height;
+      const margin = 50;
+      const contentWidth = pageWidth - (margin * 2);
+
+      // Track current Y position throughout document
+      let currentY = 0;
+
+      // Helper function to check if we need a new page
+      const checkPageBreak = (requiredSpace = 100) => {
+        if (currentY + requiredSpace > pageHeight - 100) {
+          doc.addPage();
+          currentY = 50;
+          return true;
+        }
+        return false;
+      };
+
+      // Helper function to create professional header
+      const createHeader = () => {
+        // Header background
+        doc.rect(0, 0, pageWidth, 120)
+           .fillColor(colors.darkGray)
+           .fill();
+        
+        // Company name in gold
+        doc.fillColor(colors.gold)
+           .fontSize(32)
+           .font('Helvetica-Bold')
+           .text('Velaré', margin, 30);
+        
+        // Tagline in white
+        doc.fillColor(colors.white)
+           .fontSize(14)
+           .font('Helvetica-Oblique')
+           .text('Arrive with intention, travel in elegance', margin, 70);
+        
+        // Add ABN info on the right
+        const receiptInfoX = pageWidth - 250;
+        doc.fillColor(colors.white)
+           .fontSize(10)
+           .font('Helvetica')
+           .text(`ABN #: 60647254420`, receiptInfoX, 45, { width: 200 })
+        
+        // Add bottom border
+        doc.rect(0, 120, pageWidth, 3)
+           .fillColor(colors.gold)
+           .fill();
+        
+        return 140; // Return Y position after header
+      };
+
+      // Helper function to add section with proper spacing
+      const addSection = (title, items, startY) => {
+        let y = startY;
+        
+        // Check if we need a new page for the section
+        checkPageBreak(100);
+        y = currentY;
+        
+        // Section title
+        doc.fillColor(colors.darkGray)
+           .fontSize(16)
+           .font('Helvetica-Bold')
+           .text(title, margin, y);
+        
+        y += 25;
+        
+        // Underline
+        doc.rect(margin, y, 150, 2)
+           .fillColor(colors.gold)
+           .fill();
+        
+        y += 20;
+        
+        // Items
+        items.forEach(item => {
+          // Check for page break before each item
+          if (y + 25 > pageHeight - 100) {
+            doc.addPage();
+            y = 50;
+          }
+          
+          // Label - Fixed width and positioning
+          doc.fillColor(colors.textGray)
+             .fontSize(11)
+             .font('Helvetica')
+             .text(item.label, margin, y, { width: 130 });
+          
+          // Value - Fixed positioning and width
+          doc.fillColor(colors.black)
+             .fontSize(11)
+             .font('Helvetica-Bold')
+             .text(item.value, margin + 140, y, { width: contentWidth - 140 });
+          
+          y += 20;
+        });
+        
+        return y + 15; // Return next Y position with spacing
+      };
+
+      // Create header and get starting Y position
+      currentY = createHeader();
+
+      // Receipt title
+      doc.fillColor(colors.darkGray)
+         .fontSize(24)
+         .font('Helvetica-Bold')
+         .text('Final Receipt', margin, currentY);
+      
+      currentY += 40;
+
+      // Customer greeting
+      const customerName = booking.customerName || booking.email.split('@')[0];
+      doc.fillColor(colors.black)
+         .fontSize(12)
+         .font('Helvetica')
+         .text(`Dear Customer,`, margin, currentY);
+      
+      currentY += 25;
+
+      doc.fillColor(colors.textGray)
+         .fontSize(11)
+         .text('Thank you for choosing Velaré. Here is your final receipt with completed service details:', margin, currentY, { width: contentWidth });
+      
+      currentY += 35;
+
+      // Booking Details Section
+      const bookingDetails = [
+        { label: 'Booking ID:', value: booking.bookingId || booking._id },
+        { label: 'Service Date:', value: new Date(booking.date).toLocaleDateString('en-AU') },
+        { label: 'Pickup Time:', value: booking.time },
+        { label: 'Pickup Location:', value: booking.pickupAddress },
+        { label: 'Drop-off Location:', value: booking.dropoffAddress },
+        { label: 'Vehicle Type:', value: booking.vehicleType },
+        { label: 'Passengers:', value: booking.passengers.toString() },
+        { label: 'Service Completed:', value: new Date(booking.completedAt).toLocaleString('en-AU') }
+      ];
+
+      currentY = addSection('Service Details', bookingDetails, currentY);
+
+      // Payment Breakdown Section
+      const paymentDetails = [
+        { label: 'Base Fare:', value: `$${booking.totalPrice}` }
+      ];
+
+      // Add additional charges if any exist
+      if (booking.additionalCharges) {
+        if (booking.additionalCharges.extraStops > 0) {
+          paymentDetails.push({ label: 'Extra Stops:', value: `$${booking.additionalCharges.extraStops}` });
+        }
+        if (booking.additionalCharges.waitingTime > 0) {
+          paymentDetails.push({ label: 'Waiting Time:', value: `$${booking.additionalCharges.waitingTime}` });
+        }
+        if (booking.additionalCharges.tolls > 0) {
+          paymentDetails.push({ label: 'Tolls:', value: `$${booking.additionalCharges.tolls}` });
+        }
+        if (booking.additionalCharges.extraServices > 0) {
+          paymentDetails.push({ label: 'Extra Services:', value: `$${booking.additionalCharges.extraServices}` });
+        }
+        if (booking.additionalCharges.other > 0) {
+          paymentDetails.push({ label: 'Other Charges:', value: `$${booking.additionalCharges.other}` });
+        }
+      }
+
+      // Add custom charge description if exists
+      if (booking.customChargeDescription) {
+        paymentDetails.push({ label: 'Additional Details:', value: booking.customChargeDescription });
+      }
+
+      // Add final total and payment status
+      paymentDetails.push(
+        { label: 'TOTAL AMOUNT:', value: `$${booking.finalTotal}` },
+        { label: 'Payment Status:', value: booking.paymentStatus || 'Completed' }
+      );
+
+      currentY = addSection('Payment Breakdown', paymentDetails, currentY);
+
+      // Contact Details Section
+      const contactDetails = [
+        { label: 'Email Address:', value: booking.email },
+        { label: 'Phone Number:', value: booking.phoneNumber }
+      ];
+
+      currentY = addSection('Contact Information', contactDetails, currentY);
+
+      // Thank you message
+      checkPageBreak(80);
+      currentY = Math.max(currentY, currentY);
+
+      doc.fillColor(colors.textGray)
+         .fontSize(11)
+         .font('Helvetica')
+         .text('Thank you for choosing Velaré for your transportation needs. We hope you enjoyed our service and look forward to serving you again.', 
+                margin, currentY, { width: contentWidth });
+      
+      currentY += 25;
+
+      doc.fillColor(colors.black)
+         .fontSize(12)
+         .font('Helvetica-Bold')
+         .text('We appreciate your business!', 
+                margin, currentY, { width: contentWidth });
+      
+      currentY += 30;
+
+      // Signature
+      doc.fillColor(colors.textGray)
+         .fontSize(11)
+         .font('Helvetica')
+         .text('Best regards,', margin, currentY);
+      
+      currentY += 15;
+      
+      doc.fillColor(colors.darkGray)
+         .fontSize(12)
+         .font('Helvetica-Bold')
+         .text('The Velaré Team', margin, currentY);
+
+      // Footer - always at bottom of current page
+      const footerY = Math.max(currentY + 50, pageHeight - 80);
+      
+      // Footer separator line
+      doc.rect(margin, footerY - 20, contentWidth, 1)
+         .fillColor(colors.border)
+         .fill();
+
+      // Footer content
+      doc.fillColor(colors.darkGray)
+         .fontSize(11)
+         .font('Helvetica-Bold')
+         .text('Velaré Luxury Chauffeur Service', margin, footerY, { 
+           align: 'center', 
+           width: contentWidth 
+         });
+
+      doc.fillColor(colors.textGray)
+         .fontSize(10)
+         .font('Helvetica')
+         .text('Email: info@velarechauffeurs.com.au  •  Phone: 1300 650 677', 
+                margin, footerY + 15, { 
+                  align: 'center', 
+                  width: contentWidth 
+                });
+
+      doc.end();
+
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
 
 export default async function handler(req, res) {
   console.log('=== FINALIZE ENDPOINT CALLED ===');
@@ -63,7 +344,6 @@ export default async function handler(req, res) {
     console.log('✅ Validation passed');
 
     // Find booking by MongoDB _id (not bookingId field)
-    // Your frontend is passing the MongoDB _id as the bookingId parameter
     let existingBooking = await Booking.findOne({bookingId: bookingId});
     if (!existingBooking) {
       console.log('❌ Booking not found with _id:', bookingId);
@@ -135,8 +415,14 @@ export default async function handler(req, res) {
     try {
       console.log('📧 Sending completion emails...');
       
-      // Send receipt email to customer
+      // Send receipt email to customer with PDF attachment
       if (updatedBooking.email) {
+        console.log('📄 Generating PDF receipt...');
+        
+        // Generate PDF receipt
+        const pdfBuffer = await generateReceiptPDF(updatedBooking);
+        console.log('✅ PDF receipt generated successfully');
+
         const receiptEmailData = {
           bookingId: updatedBooking.bookingId,
           customerName: updatedBooking.customerName || updatedBooking.email.split('@')[0],
@@ -153,8 +439,23 @@ export default async function handler(req, res) {
         };
 
         const customerEmail = emailTemplates.bookingReceipt(receiptEmailData);
-        await sendCustomEmail(updatedBooking.email, customerEmail.subject, customerEmail.html);
-        console.log('✅ Customer receipt email sent to:', updatedBooking.email);
+        
+        // Send email with PDF attachment
+        await sendCustomEmail(
+          updatedBooking.email, 
+          customerEmail.subject, 
+          customerEmail.html,
+          {
+            attachments: [
+              {
+                filename: `velare-receipt-${updatedBooking.bookingId}.pdf`,
+                content: pdfBuffer,
+                contentType: 'application/pdf'
+              }
+            ]
+          }
+        );
+        console.log('✅ Customer receipt email sent with PDF attachment to:', updatedBooking.email);
       }
 
       // Send notification to admin

@@ -310,7 +310,7 @@ This is an automated admin notification. Please do not reply to this email.
         </div>
         
         <div style="padding: 30px; background: white;">
-          <h2 style="color: #1a1a1a; margin-bottom: 20px;">Booking Receipt</h2>
+          <h2 style="color: #ffc107; margin-bottom: 20px;">Booking Receipt</h2>
           
           <p>Dear 'Valued Customer',</p>
           

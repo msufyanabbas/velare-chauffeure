@@ -85,16 +85,16 @@ export default async function handler(req, res) {
       
       // Tagline in white
       doc.fillColor(colors.white)
-         .fontSize(16)
-         .font('Helvetica')
-         .text('Luxury Chauffeur Service', margin, 70);
+         .fontSize(14)
+         .font('Helvetica-Oblique')
+         .text('Arrive with intention, travel in elegance', margin, 70);
       
-      // Add receipt info on the right - Fixed positioning
+      // Add ABN info on the right
       const receiptInfoX = pageWidth - 250;
       doc.fillColor(colors.white)
          .fontSize(10)
          .font('Helvetica')
-         .text(`Receipt #: ${booking.bookingId || booking._id}`, receiptInfoX, 45, { width: 200 })
+         .text(`ABN #: 60647254420`, receiptInfoX, 45, { width: 200 })
       
       // Add bottom border
       doc.rect(0, 120, pageWidth, 3)
@@ -205,7 +205,7 @@ export default async function handler(req, res) {
     // Create header and get starting Y position
     currentY = createHeader();
 
-    // Receipt title
+    // Receipt title on the left and receipt number on the right (same line)
     doc.fillColor(colors.darkGray)
        .fontSize(24)
        .font('Helvetica-Bold')
