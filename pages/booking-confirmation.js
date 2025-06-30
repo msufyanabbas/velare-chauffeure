@@ -123,25 +123,43 @@ const BookingConfirmation = () => {
       </Head>
 
       <Layout>
-        <div className="min-h-screen bg-black py-8 sm:py-12 px-4">
+        <div className="min-h-screen bg-black py-24 sm:py-24 px-4">
           <div className="max-w-4xl mx-auto">
             {/* Success Header */}
             <div className="text-center mb-8 sm:mb-12">
-              <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-green-500 rounded-full mb-4 sm:mb-6">
-                <svg className="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h1 className="text-2xl sm:text-4xl font-serif text-white mb-4">
-                Booking Confirmed!
-              </h1>
-              <p className="text-lg sm:text-xl text-gray-300 mb-2">
-                Thank you for choosing Velaré Luxury Transportation
-              </p>
-              <p className="text-gray-400 text-sm sm:text-base">
-                Your booking confirmation has been sent to your email
-              </p>
-            </div>
+  {/* Success Icon with better visibility */}
+  <div className="relative inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 mb-6">
+    {/* Outer glow ring */}
+    <div className="absolute inset-0 bg-green-500/20 rounded-full animate-pulse"></div>
+    {/* Main background circle */}
+    <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg shadow-green-500/25">
+      {/* Check mark with better contrast */}
+      <svg 
+        className="w-8 h-8 sm:w-10 sm:h-10 text-white drop-shadow-sm" 
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
+        strokeWidth={3}
+      >
+        <path 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          d="M5 13l4 4L19 7" 
+        />
+      </svg>
+    </div>
+  </div>
+  
+  <h1 className="text-2xl sm:text-4xl font-serif text-white mb-4">
+    Booking Confirmed!
+  </h1>
+  <p className="text-lg sm:text-xl text-gray-300 mb-2">
+    Thank you for choosing Velaré Luxury Transportation
+  </p>
+  <p className="text-gray-400 text-sm sm:text-base">
+    Your booking confirmation has been sent to your email
+  </p>
+</div>
 
             {bookingDetails && (
               <div className="space-y-6 sm:space-y-8">
