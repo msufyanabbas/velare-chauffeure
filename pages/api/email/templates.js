@@ -124,7 +124,7 @@ This is an automated admin notification. Please do not reply to this email.
             <p><strong>Total:</strong> $${data.totalPrice}</p>
           </div>
           
-          <p>If you need to make any changes or have questions, please contact us at info@velare.com or call +1 (555) 123-4567.</p>
+          <p>If you need to make any changes or have questions, please contact us at info@velare.com or call 1300 650 677</p>
           
           <p>Thank you for choosing Velaré.</p>
           
