@@ -38,6 +38,7 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
     returnDate: '',
     returnTime: '',
     passengers: '1',
+    hours: '1',
     extraServices: '',
     phoneNumber: '',
     email: '',
@@ -45,6 +46,7 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
   });
 
   const [isRoundTrip, setIsRoundTrip] = useState(false);
+  const [isHourlyTrip, setIsHourlyTrip] = useState(false);
 
   // Enhanced useEffect to handle preSelectedVehicle changes
   useEffect(() => {
@@ -59,6 +61,7 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
   // Update round trip state when trip type changes
   useEffect(() => {
     const newIsRoundTrip = formData.tripType === 'round-trip';
+    const newIsHourlyTrip = formData.tripType === 'hourly';
     if (newIsRoundTrip !== isRoundTrip) {
       setIsRoundTrip(newIsRoundTrip);
       
@@ -71,7 +74,19 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
         }));
       }
     }
-  }, [formData.tripType, isRoundTrip]);
+     if (newIsHourlyTrip !== isHourlyTrip) {
+    setIsHourlyTrip(newIsHourlyTrip);
+    
+    // Clear dropoff data if switching to hourly trip
+    if (newIsHourlyTrip) {
+      setFormData(prev => ({
+        ...prev,
+        dropoffAddress: '',
+        dropoffLocation: null
+      }));
+    }
+  }
+  }, [formData.tripType, isRoundTrip, isHourlyTrip]);
 
   const [errors, setErrors] = useState({});
   const [locationPicker, setLocationPicker] = useState({
@@ -99,6 +114,11 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
 
   const searchTimeoutRef = useRef({});
   const searchInputRefs = useRef({});
+
+  const hoursOptions = Array.from({ length: 12 }, (_, i) => ({
+  value: String(i + 1),
+  label: `${i + 1} Hour${i > 0 ? 's' : ''}`
+}));
 
   const vehicleOptions = [
     { value: 'luxury_sedan', label: 'Luxury Sedans' },
@@ -661,9 +681,12 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
     if (!formData.pickupAddress.trim()) {
       newErrors.pickupAddress = 'Pickup address is required';
     }
-    if (!formData.dropoffAddress.trim()) {
-      newErrors.dropoffAddress = 'Drop-off address is required';
-    }
+     if (!isHourlyTrip && !formData.dropoffAddress.trim()) {
+    newErrors.dropoffAddress = 'Drop-off address is required';
+  }
+    // if (!isHourlyTrip && !formData.dropoffAddress.trim()) {
+    //   newErrors.dropoffAddress = 'Drop-off address is required';
+    // }
     if (!formData.vehicleType) {
       newErrors.vehicleType = 'Please select a vehicle type';
     }
@@ -701,6 +724,12 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
       }
     }
 
+     if (isHourlyTrip) {
+    if (!formData.hours || formData.hours < 1) {
+      newErrors.hours = 'Please select number of hours';
+    }
+  }
+
     if (!formData.phoneNumber.trim()) {
       newErrors.phoneNumber = 'Phone number is required';
     } else if (!/^[\+]?[\d\s\-\(\)]{10,}$/.test(formData.phoneNumber.replace(/\s/g, ''))) {
@@ -716,7 +745,7 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
     if (formData.pickupLocation && !formData.pickupLocation.coordinates) {
       newErrors.pickupAddress = 'Invalid pickup location';
     }
-    if (formData.dropoffLocation && !formData.dropoffLocation.coordinates) {
+    if (!isHourlyTrip && formData.dropoffLocation && !formData.dropoffLocation.coordinates) {
       newErrors.dropoffAddress = 'Invalid drop-off location';
     }
 
@@ -734,6 +763,7 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
       const enhancedFormData = {
         ...formData,
         isRoundTrip,
+        isHourlyTrip,
         // Add metadata for backend processing
         locationMetadata: {
           pickup: {
@@ -746,6 +776,7 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
               typeof formData.pickupLocation.coordinates.lng === 'number',
             source: formData.pickupLocation?.source || 'unknown'
           },
+          ...(!isHourlyTrip && {
           dropoff: {
             hasExactAddress: formData.dropoffLocation && !formData.dropoffLocation.isCoordinateOnly,
             hasCoordinates: formData.dropoffLocation && formData.dropoffLocation.coordinates,
@@ -756,6 +787,7 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
               typeof formData.dropoffLocation.coordinates.lng === 'number',
             source: formData.dropoffLocation?.source || 'unknown'
           }
+        })
         },
         // Add timestamp
         submittedAt: new Date().toISOString()
@@ -766,6 +798,25 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
       console.error('Error submitting form:', error);
     }
   };
+
+
+ const HourlyTripIndicator = () => {
+  if (!isHourlyTrip) return null;
+  
+  return (
+    <div className="md:col-span-2 lg:col-span-3 mb-4">
+      <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4">
+        <div className="flex items-center space-x-2">
+          <Clock className="h-5 w-5 text-purple-400" />
+          <span className="text-purple-300 font-medium">Hourly Service Selected</span>
+        </div>
+        <p className="text-purple-200 text-sm mt-1">
+          You'll be charged for the duration of service. No drop-off location needed.
+        </p>
+      </div>
+    </div>
+  );
+};
 
   const RoundTripIndicator = () => {
   if (!isRoundTrip) return null;
@@ -1146,7 +1197,8 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
               />
             </div>
             
-            <RoundTripIndicator />
+           <RoundTripIndicator />
+<HourlyTripIndicator />
           </div>
 
           {/* Location Section */}
@@ -1170,7 +1222,7 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
                   onPickerOpen={() => openLocationPicker('pickup')}
                   type="pickup"
                 />
-
+ {!isHourlyTrip && (
                 <LocationInput
                   label="Drop-off Address"
                   placeholder="Search drop-off location..."
@@ -1181,9 +1233,11 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
                   onPickerOpen={() => openLocationPicker('dropoff')}
                   type="dropoff"
                   />
+ )}
               </div>
 
               {/* Swap Locations Button */}
+              {!isHourlyTrip && (
               <div className="flex justify-center">
                 <button
                   type="button"
@@ -1195,6 +1249,7 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
                   <span className="text-sm font-medium">Swap Locations</span>
                 </button>
               </div>
+              )}
             </div>
           </div>
 
@@ -1212,7 +1267,7 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
                 {/* Outbound Journey */}
                 <div className="space-y-4">
                   <h4 className="text-lg font-medium text-gray-300 border-b border-gray-700 pb-2">
-                    {isRoundTrip ? 'Outbound Journey' : 'Journey Date & Time'}
+                    {isRoundTrip ? 'Outbound Journey' : isHourlyTrip ? 'Service Details' : 'Journey Date & Time'}
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input
@@ -1235,6 +1290,21 @@ const BookingForm = ({ onSubmit, loading = false, preSelectedVehicle }) => {
                       required
                     />
                   </div>
+                   {/* Add hours field for hourly trips */}
+    {isHourlyTrip && (
+      <div className="mt-4">
+        <Select
+          label="Duration"
+          options={hoursOptions}
+          value={formData.hours}
+          onChange={(e) => handleInputChange('hours', e.target.value)}
+          placeholder="Select Hours"
+          icon={Clock}
+          error={errors.hours}
+          required
+        />
+      </div>
+    )}
                 </div>
 
                 {/* Return Journey */}
