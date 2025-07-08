@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { amount, currency = 'usd', bookingId } = req.body;
+    const { amount, currency = 'aud', bookingId } = req.body;
     
     // Validate required fields
     if (!amount || !bookingId) {

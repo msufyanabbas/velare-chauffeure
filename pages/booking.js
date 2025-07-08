@@ -119,7 +119,7 @@ const BookingPage = ({preSelectedVehicle}) => {
           bookingId: paymentResult.bookingId || bookingData.bookingId,
           paymentIntentId: paymentResult.paymentIntent?.id,
           amount: priceData.totalPrice,
-          currency: 'USD'
+          currency: 'AUD'
         },
       });
     } catch (err) {
