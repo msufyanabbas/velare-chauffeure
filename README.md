@@ -2,8 +2,8 @@
 
 A high-end web application built with **Next.js**, **MongoDB**, and **Stripe**, offering a premium and seamless booking experience for luxury chauffeur rides. Users can browse elite vehicles, select pickup/drop-off points with Google Maps integration, and enjoy instant fare breakdowns including **tolls, GST, peak hours**, and more — all with secure online payments.
 
-🌐 [Live Website](https://your-production-url.com)  
-📦 [GitHub Repository](https://github.com/your-username/your-repo-name)
+🌐 [Live Website](https://luxury-chauffere.vercel.app)  
+📦 [GitHub Repository](https://github.com/msufyanabbas/velare-chauffeure)
 
 ---
 
@@ -29,7 +29,7 @@ A high-end web application built with **Next.js**, **MongoDB**, and **Stripe**, 
 | [Stripe](https://stripe.com/) | Payment gateway for online transactions |
 | [Google Maps API](https://developers.google.com/maps) | Distance & address data, route & toll calculations |
 | [Nodemailer](https://nodemailer.com/) | Emailing receipts and confirmations |
-| [Tailwind CSS](https://tailwindcss.com/) *(if used)* | Utility-first CSS framework |
+| [Tailwind CSS](https://tailwindcss.com/) | Utility-first CSS framework |
 | Vercel | Deployment platform for Next.js apps |
 
 ---
