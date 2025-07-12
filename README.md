@@ -37,9 +37,16 @@ A high-end web application built with **Next.js**, **MongoDB**, and **Stripe**, 
 ## 📸 Screenshots
 
 ![image](https://github.com/user-attachments/assets/b81654c1-5efd-4b86-a4b6-73d95e34c682)
-![image](https://github.com/user-attachments/assets/7b0dc235-8053-4f43-8ff3-ddd1f529d438)
+<img width="1900" height="857" alt="image" src="https://github.com/user-attachments/assets/8ef76c6e-bf9e-46b6-987d-7adb044f4e8c" />
 ![image](https://github.com/user-attachments/assets/b88fa149-cec5-4791-bf5b-30af74e2832c)
-![image](https://github.com/user-attachments/assets/22af0739-1cfb-4168-87c9-823ec5403f45)
+<img width="1086" height="666" alt="image" src="https://github.com/user-attachments/assets/877a08cd-5942-4e63-ba6f-c5c636c23b12" />
+<img width="1073" height="591" alt="image" src="https://github.com/user-attachments/assets/feb41526-8802-4d45-9a3c-64547454da63" />
+<img width="1904" height="769" alt="image" src="https://github.com/user-attachments/assets/40289469-c2e0-4277-b169-e76150077571" />
+<img width="1606" height="718" alt="image" src="https://github.com/user-attachments/assets/49f77140-f4be-4847-ae6f-70c420514837" />
+
+
+
+
 
 
 📧 Contact
