@@ -11,7 +11,7 @@ const PriceCalculator = ({ bookingData, priceData }) => {
       <div className="space-y-3 text-gray-300">
         <div className="flex justify-between">
           <span>Distance:</span>
-          <span>{priceData.distance} miles</span>
+          <span>{priceData.distance} KM</span>
         </div>
         
         <div className="flex justify-between">
