@@ -7,6 +7,7 @@ import About from './About';
 import Testimonials from './Testimonials';
 import Contact from './Contact-us';
 import OpeningSequence from '../components/opening/OpeningSequence';
+import InstantQuote from '../components/booking/InstantQuote'
 
 const LuxuryChauffeurApp = () => {
   const [showOpening, setShowOpening] = useState(true);
@@ -33,6 +34,7 @@ const LuxuryChauffeurApp = () => {
   return (
     <Layout>
       <HeroSection selectedCar={openingData?.selectedCar} />
+      <InstantQuote />
       <InstantBooking preSelectedCar={openingData?.selectedCar} />
       <Services />
       <About />
