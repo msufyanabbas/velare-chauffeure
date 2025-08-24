@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { MapPin, Calculator, Clock, DollarSign, Search, X } from 'lucide-react';
+import { calculateDistanceAndDuration } from '../../lib/utils';
 
 const InstantQuote = ({ selectedCar }) => {
    const [formData, setFormData] = useState({
@@ -390,24 +391,63 @@ const InstantQuote = ({ selectedCar }) => {
     };
   }, []);
 
-  // Simulate distance calculation
-  const calculateDistance = (pickup, dropoff) => {
-    if (!pickup || !dropoff) return 0;
-    const baseDist = Math.abs(pickup.fullAddress.length - dropoff.fullAddress.length) + 8;
-    return Math.max(baseDist, Math.random() * 30 + 8);
-  };
+  const calculateDistance = async (pickupLocation, dropoffLocation) => {
+  if (!pickupLocation || !dropoffLocation) {
+    console.warn('Missing location data for distance calculation');
+    return { distance: 0, duration: 0, status: 'missing_data' };
+  }
 
-  const handleCalculateQuote = async () => {
-    if (!formData.pickupAddress.trim() || !formData.dropoffAddress.trim()) {
-      alert('Please enter both pickup and dropoff locations');
-      return;
+  try {
+    // Use the proper utility function from utils.js
+    const result = await calculateDistanceAndDuration(pickupLocation.fullAddress, dropoffLocation.fullAddress);
+    return {
+      distance: result.distance,
+      duration: result.duration,
+      distanceText: result.distanceText,
+      durationText: result.durationText,
+      status: result.status
+    };
+  } catch (error) {
+    console.error('Distance calculation failed:', error);
+    return { 
+      distance: 0, 
+      duration: 0, 
+      status: 'error',
+      error: error.message 
+    };
+  }
+};
+
+const handleCalculateQuote = async () => {
+  // Validate basic inputs
+  if (!formData.pickupAddress.trim() || !formData.dropoffAddress.trim()) {
+    alert('Please enter both pickup and dropoff locations');
+    return;
+  }
+
+  // Validate that we have location objects with coordinates
+  if (!formData.pickupLocation || !formData.dropoffLocation) {
+    alert('Please select valid locations from the search results or map picker');
+    return;
+  }
+
+  setIsCalculating(true);
+  
+  try {
+    // Add loading delay for UX
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Calculate actual distance using the utility function
+    const routeData = await calculateDistance(formData.pickupLocation, formData.dropoffLocation);
+    
+    if (routeData.distance === 0) {
+      throw new Error('Unable to calculate distance between locations');
     }
 
-    setIsCalculating(true);
+    // Use the existing basePricing structure for consistency
+    const distance = routeData.distance;
+    const duration = routeData.duration;
     
-    await new Promise(resolve => setTimeout(resolve, 1800));
-    
-    const distance = calculateDistance(formData.pickupLocation, formData.dropoffLocation);
     const baseCost = basePricing.baseRate;
     const distanceCost = distance * basePricing.perKm;
     const subtotal = baseCost + distanceCost;
@@ -416,16 +456,55 @@ const InstantQuote = ({ selectedCar }) => {
 
     setQuote({
       distance: distance.toFixed(1),
+      duration: Math.ceil(duration),
       baseCost,
       distanceCost: distanceCost.toFixed(2),
       subtotal: subtotal.toFixed(2),
       tax: tax.toFixed(2),
       total: total.toFixed(2),
-      estimatedTime: Math.ceil(distance / 2.5)
+      estimatedTime: Math.ceil(duration),
+      distanceText: routeData.distanceText || `${distance.toFixed(1)} km`,
+      durationText: routeData.durationText || `${Math.ceil(duration)} min`,
+      calculationMethod: routeData.status,
+      // Add route data for debugging
+      routeData: routeData
     });
 
+  } catch (error) {
+    console.error('Quote calculation error:', error);
+    
+    // Show user-friendly error message
+    alert(`Unable to calculate quote: ${error.message}. Please check your locations and try again.`);
+    
+    // Optionally show fallback quote with warning
+    const estimatedDistance = 25; // Default fallback distance
+    const estimatedDuration = 35; // Default fallback duration
+    
+    const baseCost = basePricing.baseRate;
+    const distanceCost = estimatedDistance * basePricing.perKm;
+    const subtotal = baseCost + distanceCost;
+    const tax = subtotal * basePricing.taxRate;
+    const total = subtotal + tax;
+
+    setQuote({
+      distance: estimatedDistance.toFixed(1),
+      duration: estimatedDuration,
+      baseCost,
+      distanceCost: distanceCost.toFixed(2),
+      subtotal: subtotal.toFixed(2),
+      tax: tax.toFixed(2),
+      total: total.toFixed(2),
+      estimatedTime: estimatedDuration,
+      distanceText: `${estimatedDistance} km (estimated)`,
+      durationText: `${estimatedDuration} min (estimated)`,
+      calculationMethod: 'fallback_estimate',
+      isEstimate: true,
+      warning: 'This is an estimated quote. Actual distance calculation failed.'
+    });
+  } finally {
     setIsCalculating(false);
-  };
+  }
+};
 
    const handleTextLocationSelect = (locationData, type) => {
   if (!locationData || !type) {
@@ -745,8 +824,8 @@ const InstantQuote = ({ selectedCar }) => {
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-300">
-        {label} {required && <span className="text-red-400">*</span>}
+      <label className="block text-sm font-medium text-gray-900">
+        {label} {required && <span className="text-red-500">*</span>}
       </label>
       
       <div className="relative">
@@ -765,8 +844,8 @@ const InstantQuote = ({ selectedCar }) => {
             onBlur={handleInputBlur}
             placeholder={apiKeyError ? "Search unavailable - use map" : placeholder}
             autoComplete="off"
-            className={`w-full pl-10 pr-20 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-colors ${
-              error ? 'border-red-500' : 'border-gray-700'
+            className={`w-full pl-10 pr-20 py-3 bg-white border-2 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-gold-500 transition-colors ${
+              error ? 'border-red-500' : 'border-gray-300'
             }`}
           />
           
@@ -782,7 +861,7 @@ const InstantQuote = ({ selectedCar }) => {
               <button
                 type="button"
                 onClick={clearSearch}
-                className="p-1 text-gray-400 hover:text-white rounded transition-colors"
+                className="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors"
                 tabIndex={-1} // Prevent focus stealing
               >
                 <X className="h-4 w-4" />
@@ -793,7 +872,7 @@ const InstantQuote = ({ selectedCar }) => {
             <button
               type="button"
               onClick={onPickerOpen}
-              className="p-1 text-gray-400 hover:text-gold-500 rounded transition-colors"
+              className="p-1 text-gray-400 hover:text-gold-600 rounded transition-colors"
               title="Choose on map"
               tabIndex={-1} // Prevent focus stealing
             >
@@ -806,7 +885,7 @@ const InstantQuote = ({ selectedCar }) => {
         {showResults && searchResults.length > 0 && !apiKeyError && (
           <div 
             ref={dropdownRef}
-            className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+            className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto"
           >
             {searchResults.map((place, index) => (
               <button
@@ -814,10 +893,10 @@ const InstantQuote = ({ selectedCar }) => {
                 type="button"
                 onClick={() => handleSearchResultSelect(place)}
                 onMouseDown={(e) => e.preventDefault()} // Prevent input blur
-                className="w-full text-left p-3 hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-b-0"
+                className="w-full text-left p-3 hover:bg-gray-50 transition-colors border-b border-gray-200 last:border-b-0"
               >
-                <div className="text-white font-medium text-sm">{place.name}</div>
-                <div className="text-gray-400 text-xs mt-1 line-clamp-2">{place.formatted_address}</div>
+                <div className="text-gray-900 font-medium text-sm">{place.name}</div>
+                <div className="text-gray-500 text-xs mt-1 line-clamp-2">{place.formatted_address}</div>
               </button>
             ))}
           </div>
@@ -827,9 +906,9 @@ const InstantQuote = ({ selectedCar }) => {
         {showResults && apiKeyError && (
           <div 
             ref={dropdownRef}
-            className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-3"
+            className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-3"
           >
-            <div className="text-yellow-400 text-sm">
+            <div className="text-yellow-600 text-sm">
               ⚠️ Location search is currently unavailable. Please use the map picker button.
             </div>
           </div>
@@ -838,7 +917,7 @@ const InstantQuote = ({ selectedCar }) => {
 
       {/* Error Message */}
       {error && (
-        <p className="text-red-400 text-sm">{error}</p>
+        <p className="text-red-500 text-sm">{error}</p>
       )}
     </div>
   );
@@ -859,27 +938,33 @@ const InstantQuote = ({ selectedCar }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen bg-white overflow-hidden">
+      {/* Background Pattern */}
       <div className="absolute inset-0 bg-dots-pattern opacity-30"></div>
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-br from-gold-300 to-gold-600 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-br from-gold-200 to-gold-500 rounded-full blur-3xl"></div>
+      </div>
       
-      <section className="relative py-12 sm:py-16 lg:py-20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative py-12 sm:py-16 lg:py-24">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-4xl mx-auto">
             {/* Header */}
             <div className="text-center mb-8 sm:mb-12 lg:mb-16">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gold-400/20 rounded-full mb-6">
-                <Calculator className="w-8 h-8 text-gold-400" />
+             <div className="inline-flex items-center justify-center w-16 h-16 bg-gold-400/20 rounded-full mb-6">
+                <Calculator className="w-8 h-8 text-gold-700" />
               </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-serif text-white mb-4 sm:mb-6 leading-tight">
-                Instant <span className="text-gold-400">Quote</span>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-serif text-gray-900 mb-4 sm:mb-6 leading-tight tracking-tight">
+                INSTANT <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold-600 to-gold-800">QUOTE</span>
               </h1>
-              <p className="text-gray-300 text-base sm:text-lg lg:text-xl max-w-3xl mx-auto leading-relaxed">
-                Get an instant price estimate for your luxury transportation. Simply enter your pickup and destination locations.
+              <div className="w-24 h-1 bg-gradient-to-r from-gold-500 to-gold-700 mx-auto mb-6"></div>
+              <p className="text-gray-600 text-base sm:text-lg lg:text-xl max-w-3xl mx-auto leading-relaxed font-light">
+                Get an instant price estimate for your luxury transportation. Simply enter your pickup and destination locations to experience the elegance of Velaré.
               </p>
             </div>
 
             {/* Quote Form */}
-            <div className="bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6 sm:p-8 mb-8">
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl border border-gold-100 shadow-xl p-6 sm:p-8 mb-8">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                   <LocationInput
                   label="Pickup Address"
@@ -909,11 +994,11 @@ const InstantQuote = ({ selectedCar }) => {
                 <button
                   onClick={handleCalculateQuote}
                   disabled={isCalculating}
-                  className="bg-gold-500 hover:bg-gold-600 disabled:bg-gray-600 text-black disabled:text-gray-400 font-semibold px-8 py-4 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                  className="bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-600 hover:to-gold-700 disabled:from-gray-400 disabled:to-gray-500 text-white disabled:text-gray-300 font-semibold px-10 py-4 rounded-full transition-all duration-300 transform hover:scale-105 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                 >
                   {isCalculating ? (
                     <div className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-black" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
@@ -931,74 +1016,74 @@ const InstantQuote = ({ selectedCar }) => {
 
             {/* Quote Results */}
             {quote && (
-              <div className="bg-gradient-to-r from-gray-800/40 to-gray-700/40 backdrop-blur-sm rounded-2xl border border-gold-400/30 p-6 sm:p-8 animate-slide-in">
+              <div className="bg-gradient-to-br from-white to-gray-50 backdrop-blur-sm rounded-3xl border border-gold-200 shadow-2xl p-6 sm:p-8 animate-slide-in">
                 {/* Header */}
                 <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-gold-400/20 rounded-full mb-4">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-gold-100 to-gold-200 rounded-full mb-4 shadow-lg">
                     <DollarSign className="w-6 h-6 text-gold-400" />
                   </div>
-                  <h3 className="text-2xl sm:text-3xl font-serif text-white mb-2">
+                  <h3 className="text-2xl sm:text-3xl font-serif text-gray-900 mb-4">
                     Your Quote is Ready
                   </h3>
-                  <div className="bg-gray-700/30 rounded-lg p-4 max-w-md mx-auto">
-                    <p className="text-gray-300 text-sm">
-                      <span className="text-green-400">From:</span> {formData.pickupLocation.fullAddress}
+                  <div className="bg-gray-50/50 rounded-xl p-4 max-w-md mx-auto border border-gold-100">
+                    <p className="text-gray-600 text-sm">
+                      <span className="text-green-600 font-medium">From:</span> {formData.pickupLocation?.fullAddress || formData.pickupAddress}
                     </p>
                     <div className="flex justify-center my-2">
-                      <div className="w-8 h-px bg-gradient-to-r from-transparent via-gold-400 to-transparent"></div>
+                      <div className="w-8 h-px bg-gradient-to-r from-transparent via-gold-500 to-transparent"></div>
                     </div>
-                    <p className="text-gray-300 text-sm">
-                      <span className="text-red-400">To:</span> {formData.dropoffLocation.fullAddress}
+                    <p className="text-gray-600 text-sm">
+                      <span className="text-red-500 font-medium">To:</span> {formData.dropoffLocation?.fullAddress || formData.dropoffAddress}
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {/* Trip Details */}
-                  <div className="bg-gray-800/40 rounded-xl p-6 border border-gray-600/30">
+                  <div className="bg-white/60 rounded-2xl p-6 border border-gold-100 shadow-lg">
                     <div className="flex items-center mb-4">
-                      <Clock className="w-5 h-5 text-gold-400 mr-2" />
-                      <h4 className="text-lg font-semibold text-white">Trip Details</h4>
+                      <Clock className="w-5 h-5 text-gold-600 mr-2" />
+                      <h4 className="text-lg font-semibold text-gray-900">Trip Details</h4>
                     </div>
                     <div className="space-y-3">
                       <div className="flex justify-between items-center py-2">
-                        <span className="text-gray-300">Distance:</span>
-                        <span className="font-semibold text-white">{quote.distance} km</span>
+                        <span className="text-gray-600">Distance:</span>
+                        <span className="font-semibold text-gray-900">{quote.distance} km</span>
                       </div>
                       <div className="flex justify-between items-center py-2">
-                        <span className="text-gray-300">Estimated Time:</span>
-                        <span className="font-semibold text-white">{quote.estimatedTime} minutes</span>
+                        <span className="text-gray-600">Estimated Time:</span>
+                        <span className="font-semibold text-gray-900">{quote.estimatedTime} minutes</span>
                       </div>
                       <div className="flex justify-between items-center py-2">
-                        <span className="text-gray-300">Service Type:</span>
-                        <span className="font-semibold text-gold-400">Premium</span>
+                        <span className="text-gray-600">Service Type:</span>
+                        <span className="font-semibold text-gold-600">Premium Luxury</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Price Breakdown */}
-                  <div className="bg-gray-800/40 rounded-xl p-6 border border-gray-600/30">
+                  <div className="bg-white/60 rounded-2xl p-6 border border-gold-100 shadow-lg">
                     <div className="flex items-center mb-4">
-                      <DollarSign className="w-5 h-5 text-gold-400 mr-2" />
-                      <h4 className="text-lg font-semibold text-white">Price Breakdown</h4>
+                      <DollarSign className="w-5 h-5 text-gold-600 mr-2" />
+                      <h4 className="text-lg font-semibold text-gray-900">Price Breakdown</h4>
                     </div>
                     <div className="space-y-3">
                       <div className="flex justify-between items-center py-2">
-                        <span className="text-gray-300">Base Rate:</span>
-                        <span className="text-white">${quote.baseCost}</span>
+                        <span className="text-gray-600">Base Rate:</span>
+                        <span className="text-gray-900">${quote.baseCost}</span>
                       </div>
                       <div className="flex justify-between items-center py-2">
-                        <span className="text-gray-300">Distance ({quote.distance} km):</span>
-                        <span className="text-white">${quote.distanceCost}</span>
+                        <span className="text-gray-600">Distance ({quote.distance} km):</span>
+                        <span className="text-gray-900">${quote.distanceCost}</span>
                       </div>
                       <div className="flex justify-between items-center py-2">
-                        <span className="text-gray-300">Tax (15%):</span>
-                        <span className="text-white">${quote.tax}</span>
+                        <span className="text-gray-600">Tax (15%):</span>
+                        <span className="text-gray-900">${quote.tax}</span>
                       </div>
-                      <div className="border-t border-gray-600 pt-3">
+                      <div className="border-t border-gold-200 pt-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-xl font-bold text-white">Total:</span>
-                          <span className="text-2xl font-bold text-gold-400">${quote.total}</span>
+                          <span className="text-xl font-bold text-gray-900">Total:</span>
+                          <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gold-600 to-gold-800">${quote.total}</span>
                         </div>
                       </div>
                     </div>
@@ -1017,20 +1102,20 @@ const InstantQuote = ({ selectedCar }) => {
                         });
                       }
                     }}
-                    className="bg-gold-500 hover:bg-gold-600 text-black font-semibold px-8 py-3 rounded-lg transition-all duration-300 transform hover:scale-105"
+                    className="bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-600 hover:to-gold-700 text-white font-semibold px-8 py-3 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                   >
                     Book This Trip - ${quote.total}
                   </button>
                   <button
                     onClick={handleNewQuote}
-                    className="border-2 border-gray-600 hover:border-gray-500 text-gray-300 hover:text-white font-semibold px-8 py-3 rounded-lg transition-all duration-300"
+                    className="border-2 border-gray-300 hover:border-gold-400 text-gray-600 hover:text-gold-600 font-semibold px-8 py-3 rounded-full transition-all duration-300 bg-white hover:bg-gold-50"
                   >
                     New Quote
                   </button>
                 </div>
 
                 <div className="mt-6 text-center">
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-gray-500 text-sm">
                     *Prices are estimates. Final cost may vary based on traffic, waiting time, and additional services.
                   </p>
                 </div>
@@ -1039,12 +1124,15 @@ const InstantQuote = ({ selectedCar }) => {
 
             {/* Bottom Info */}
             <div className="text-center mt-8 sm:mt-12">
-              <p className="text-gray-400 text-sm sm:text-base">
-                Questions about pricing? Contact our support team at{' '}
-                <a href="tel:1300 650 677" className="text-gold-400 hover:text-gold-300 transition-colors">
-                  1300 650 677
-                </a>
-              </p>
+              <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl p-8 border border-gold-100 shadow-lg">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">Need Assistance?</h4>
+                <p className="text-gray-600 text-sm sm:text-base">
+                  Questions about pricing or services? Contact our dedicated support team at{' '}
+                  <a href="tel:1300 650 677" className="text-gold-600 hover:text-gold-700 transition-colors font-medium">
+                    1300 650 677
+                  </a>
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -1054,7 +1142,7 @@ const InstantQuote = ({ selectedCar }) => {
         @keyframes slide-in {
           0% { 
             opacity: 0; 
-            transform: translateY(20px) scale(0.95); 
+            transform: translateY(20px) scale(0.98); 
           }
           100% { 
             opacity: 1; 
@@ -1062,12 +1150,19 @@ const InstantQuote = ({ selectedCar }) => {
           }
         }
         .animate-slide-in {
-          animation: slide-in 0.8s ease-out;
+          animation: slide-in 0.6s ease-out;
         }
         
         .bg-dots-pattern {
-          background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0);
+          background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 0);
           background-size: 20px 20px;
+        }
+        
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
       `}</style>
     </div>
