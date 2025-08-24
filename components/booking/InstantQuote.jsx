@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { MapPin, Calculator, Clock, DollarSign, Search, X } from 'lucide-react';
 import { calculateDistanceAndDuration } from '../../lib/utils';
+import LocationPicker from './LocationPicker';
 
 const InstantQuote = ({ selectedCar }) => {
    const [formData, setFormData] = useState({
@@ -601,6 +602,12 @@ const handleCalculateQuote = async () => {
       hasSearched: false,
       apiKeyError: false
     });
+    setFormData({
+      pickupAddress: '',
+      dropoffAddress: '',
+      pickupLocation: null,
+      dropoffLocation: null
+    });
   };
 
   // LocationInput component with Google Places integration
@@ -923,6 +930,9 @@ const handleCalculateQuote = async () => {
   );
 };
 
+  
+
+
  const openLocationPicker = (type) => {
     setLocationPicker({
       isOpen: true,
@@ -935,6 +945,84 @@ const handleCalculateQuote = async () => {
       isOpen: false,
       type: null
     });
+  };
+
+  const handleLocationSelect = (locationData) => {
+    const { type } = locationPicker;
+    if (!locationData || !type) {
+      console.error('Invalid location data or type');
+      return;
+    }
+    
+    try {
+      // Validate coordinates
+      const hasValidCoordinates = locationData.coordinates && 
+        typeof locationData.coordinates.lat === 'number' && 
+        typeof locationData.coordinates.lng === 'number' &&
+        !isNaN(locationData.coordinates.lat) && 
+        !isNaN(locationData.coordinates.lng) &&
+        Math.abs(locationData.coordinates.lat) <= 90 &&
+        Math.abs(locationData.coordinates.lng) <= 180;
+
+      if (!hasValidCoordinates) {
+        console.error('Invalid coordinates received:', locationData.coordinates);
+        return;
+      }
+
+      // Create clean display address
+      const displayAddress = getDisplayAddress(locationData);
+      
+      // Create standardized location object
+      const locationObject = {
+        displayAddress,
+        fullAddress: locationData.fullAddress || displayAddress,
+        coordinates: {
+          lat: Number(locationData.coordinates.lat),
+          lng: Number(locationData.coordinates.lng)
+        },
+        placeId: locationData.placeId || null,
+        name: locationData.name || null,
+        isCoordinateOnly: Boolean(locationData.isCoordinateOnly),
+        addressComponents: locationData.addressComponents || null,
+        source: 'map_picker',
+        timestamp: Date.now()
+      };
+
+      // Update form data based on type
+      if (type === 'pickup') {
+        setFormData(prev => ({
+          ...prev,
+          pickupAddress: displayAddress,
+          pickupLocation: locationObject
+        }));
+        
+        // Clear pickup error
+        if (errors.pickupAddress) {
+          setErrors(prev => ({
+            ...prev,
+            pickupAddress: ''
+          }));
+        }
+      } else if (type === 'dropoff') {
+        setFormData(prev => ({
+          ...prev,
+          dropoffAddress: displayAddress,
+          dropoffLocation: locationObject
+        }));
+        
+        // Clear dropoff error
+        if (errors.dropoffAddress) {
+          setErrors(prev => ({
+            ...prev,
+            dropoffAddress: ''
+          }));
+        }
+      }
+
+      closeLocationPicker();
+    } catch (error) {
+      console.error('Error processing location selection:', error);
+    }
   };
 
   return (
@@ -1165,6 +1253,19 @@ const handleCalculateQuote = async () => {
           overflow: hidden;
         }
       `}</style>
+       {/* Location Picker Modal */}
+      {locationPicker.isOpen && (
+        <LocationPicker
+          type={locationPicker.type}
+          currentLocation={
+            locationPicker.type === 'pickup' 
+              ? formData.pickupLocation?.displayAddress || ''
+              : formData.dropoffLocation?.displayAddress || ''
+          }
+          onLocationSelect={handleLocationSelect}
+          onClose={closeLocationPicker}
+        />
+      )}
     </div>
   );
 };

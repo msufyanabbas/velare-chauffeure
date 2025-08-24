@@ -9,7 +9,7 @@ const Contact = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null); // 'success', 'error', or null
+  const [submitStatus, setSubmitStatus] = useState(null);
   const [submitMessage, setSubmitMessage] = useState('');
 
   const handleChange = (e) => {
@@ -17,7 +17,6 @@ const Contact = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
-    // Clear any previous status when user starts typing
     if (submitStatus) {
       setSubmitStatus(null);
       setSubmitMessage('');
@@ -44,7 +43,6 @@ const Contact = () => {
       if (response.ok) {
         setSubmitStatus('success');
         setSubmitMessage(data.message);
-        // Reset form on success
         setFormData({
           name: '',
           email: '',
@@ -63,6 +61,33 @@ const Contact = () => {
     }
   };
 
+  const locations = [
+    {
+      name: 'SYDNEY',
+      description: 'Central Business District & Metropolitan Area',
+      mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d106374.04303784316!2d151.11643058541005!3d-33.85781497329982!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6b129838f39a743f%3A0x3017d681632a850!2sSydney%20NSW%2C%20Australia!5e0!3m2!1sen!2s!4v1692000000000!5m2!1sen!2s&style=feature:administrative%7Celement:labels%7Cvisibility:off&style=feature:landscape%7Celement:all%7Ccolor:0x2c3e50&style=feature:poi%7Celement:all%7Cvisibility:off&style=feature:road%7Celement:geometry%7Ccolor:0x34495e&style=feature:water%7Celement:geometry%7Ccolor:0x3498db',
+      icon: '🏙️'
+    },
+    {
+      name: 'WOLLONGONG',
+      description: 'Illawarra Region & South Coast',
+      mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d26728.096419756876!2d150.87543434863282!3d-34.42486790!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6b129838f39a743f%3A0x3017d681632a850!2sWollongong%20NSW%2C%20Australia!5e0!3m2!1sen!2s!4v1692000000000!5m2!1sen!2s&style=feature:administrative%7Celement:labels%7Cvisibility:off&style=feature:landscape%7Celement:all%7Ccolor:0x2c3e50&style=feature:poi%7Celement:all%7Cvisibility:off&style=feature:road%7Celement:geometry%7Ccolor:0x34495e&style=feature:water%7Celement:geometry%7Ccolor:0x3498db',
+      icon: '🏔️'
+    },
+    {
+      name: 'CENTRAL COAST',
+      description: 'Gosford, Wyong & Surrounding Areas',
+      mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d26728.096419756876!2d151.30000000000001!3d-33.43000000!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6b734b1e7c5e5555%3A0x40609b490436850!2sCentral%20Coast%20NSW%2C%20Australia!5e0!3m2!1sen!2s!4v1692000000000!5m2!1sen!2s&style=feature:administrative%7Celement:labels%7Cvisibility:off&style=feature:landscape%7Celement:all%7Ccolor:0x2c3e50&style=feature:poi%7Celement:all%7Cvisibility:off&style=feature:road%7Celement:geometry%7Ccolor:0x34495e&style=feature:water%7Celement:geometry%7Ccolor:0x3498db',
+      icon: '🌊'
+    },
+    {
+      name: 'PERTH',
+      description: 'Western Australia Metropolitan',
+      mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d108906.37151862748!2d115.79320585541005!3d-31.95239929932499!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2a32bad5ea6fb855%3A0x30e6f5b50a1ac251!2sPerth%20WA%2C%20Australia!5e0!3m2!1sen!2s!4v1692000000000!5m2!1sen!2s&style=feature:administrative%7Celement:labels%7Cvisibility:off&style=feature:landscape%7Celement:all%7Ccolor:0x2c3e50&style=feature:poi%7Celement:all%7Cvisibility:off&style=feature:road%7Celement:geometry%7Ccolor:0x34495e&style=feature:water%7Celement:geometry%7Ccolor:0x3498db',
+      icon: '🌅'
+    }
+  ];
+
   return (
     <section id="contact" className="py-20 bg-gray-700">
       <div className="container mx-auto px-6">
@@ -80,10 +105,10 @@ const Contact = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-12">
+          <div className="grid lg:grid-cols-2 gap-12">
             {/* Contact Form */}
             <div>
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-6">
                 {/* Status Messages */}
                 {submitStatus && (
                   <div className={`p-4 rounded-md ${
@@ -144,6 +169,7 @@ const Contact = () => {
                 </div>
                 <button
                   type="submit"
+                  onClick={handleSubmit}
                   disabled={isSubmitting}
                   className="w-full bg-gray-600 text-white py-3 px-6 rounded-md hover:bg-gray-500 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 >
@@ -159,7 +185,7 @@ const Contact = () => {
                     'Submit'
                   )}
                 </button>
-              </form>
+              </div>
             </div>
 
             {/* Contact Information */}
@@ -192,58 +218,61 @@ const Contact = () => {
                   </div>
                 </div>
 
-                {/* Multiple Locations */}
+                {/* Service Locations */}
                 <div className="space-y-6">
                   <h5 className="text-lg font-serif text-white mb-4 border-b border-gray-600 pb-2">
                     OUR LOCATIONS
                   </h5>
                   
-                  {/* Location 1 - Sydney */}
-                  <div className="flex items-start">
-                    <div className="w-6 h-6 mr-4 flex-shrink-0 mt-1">
-                      <svg fill="currentColor" className="w-6 h-6 text-amber-400" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-amber-400 text-sm font-semibold mb-1">SYDNEY OFFICE</p>
-                      <p className="text-white text-lg">
-                        3/442-444 King Georges Road Beverly Hills <br />
-                        NSW, Australia 2209
-                      </p>
-                    </div>
-                  </div>
+                  {/* Location Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-max">
+                    {locations.map((location, index) => (
+                      <div key={index} className="bg-gray-800 rounded-lg overflow-hidden shadow-lg border border-gray-700 hover:border-amber-400/30 transition-all duration-300">
+                        {/* Location Header */}
+                        <div className="p-4 bg-gray-750 border-b border-gray-700">
+                          <div className="flex items-center">
+                            <div className="w-6 h-6 mr-3 flex-shrink-0">
+                              <svg fill="currentColor" className="w-6 h-6 text-amber-400" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="text-white font-semibold text-base">{location.name}</p>
+                              <p className="text-gray-400 text-sm">Service Area</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Enhanced Map Container */}
+                        <div className="relative w-full h-36 bg-gray-900 overflow-hidden group">
+                          <iframe
+                            src={location.mapUrl}
+                            width="100%"
+                            height="100%"
+                            style={{ 
+                              border: 0,
+                              filter: 'saturate(0.8) contrast(1.1) brightness(0.95)'
+                            }}
+                            allowFullScreen=""
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                            title={`${location.name} Service Area`}
+                            className="group-hover:filter-none transition-all duration-500"
+                          ></iframe>
+                          
+                          {/* Subtle overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/20 via-transparent to-transparent pointer-events-none group-hover:opacity-0 transition-opacity duration-300"></div>
+                          
+                          {/* Corner accent */}
+                          <div className="absolute top-3 right-3 w-2 h-2 bg-amber-400 rounded-full opacity-80"></div>
+                        </div>
 
-                  {/* Location 2 - Perth */}
-                  <div className="flex items-start">
-                    <div className="w-6 h-6 mr-4 flex-shrink-0 mt-1">
-                      <svg fill="currentColor" className="w-6 h-6 text-amber-400" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-amber-400 text-sm font-semibold mb-1">PERTH OFFICE</p>
-                      <p className="text-white text-lg">
-                        265 Benara Road Beechboro <br />
-                        Perth WA 6061
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Location 3 - Wollongong */}
-                  <div className="flex items-start">
-                    <div className="w-6 h-6 mr-4 flex-shrink-0 mt-1">
-                      <svg fill="currentColor" className="w-6 h-6 text-amber-400" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-amber-400 text-sm font-semibold mb-1">WOLLONGONG OFFICE</p>
-                      <p className="text-white text-lg">
-                        7 Malonga Place Koonawarra <br />
-                        NSW 2530
-                      </p>
-                    </div>
+                        {/* Bottom info bar */}
+                        <div className="px-4 py-2 bg-gray-850 text-center">
+                          <span className="text-amber-400 text-xs font-medium tracking-wide">ACTIVE SERVICE ZONE</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -283,6 +312,38 @@ const Contact = () => {
                       viewBox="0 0 24 24"
                     >
                       <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    </svg>
+                  </a>
+
+                  {/* LinkedIn Icon */}
+                  <a
+                    href="https://www.linkedin.com/company/velare-chauffeurs/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors duration-300"
+                  >
+                    <svg 
+                      className="w-5 h-5 text-white" 
+                      fill="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                  </a>
+
+                  {/* Twitter/X Icon */}
+                  <a
+                    href="https://x.com/VelareChauffeur"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center hover:bg-black transition-colors duration-300"
+                  >
+                    <svg 
+                      className="w-5 h-5 text-white" 
+                      fill="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                     </svg>
                   </a>
                 </div>
