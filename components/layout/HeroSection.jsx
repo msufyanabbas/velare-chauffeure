@@ -12,6 +12,16 @@ const HeroSection = ({ selectedCar }) => {
     }
   };
 
+  const handleGetQuoteClick = () => {
+    const quoteElement = document.getElementById('quote') || document.getElementById('instantQuote');
+    if (quoteElement) {
+      quoteElement.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
   return (
     <section id="home" className="relative h-screen flex items-center">
       {/* Background Image */}
@@ -39,12 +49,21 @@ const HeroSection = ({ selectedCar }) => {
             <span className="text-gold-400">with Velaré.</span>
           </h1>
           
-          <button
-            onClick={handleBookNowClick}
-            className="bg-gold-500 hover:bg-gold-600 text-black font-semibold px-8 py-3 rounded transition-all duration-300 transform hover:scale-105"
-          >
-            {selectedCar ? `Book Your ${getCarDisplayName(selectedCar)}` : 'Book Your Ride Now'}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <button
+              onClick={handleBookNowClick}
+              className="bg-gold-500 hover:bg-gold-600 text-black font-semibold px-8 py-3 rounded transition-all duration-300 transform hover:scale-105"
+            >
+              {selectedCar ? `Book Your ${getCarDisplayName(selectedCar)}` : 'Book Your Ride Now'}
+            </button>
+            
+            <button
+              onClick={handleGetQuoteClick}
+              className="bg-gold-500 hover:bg-gold-600 text-black font-semibold px-8 py-3 rounded transition-all duration-300 transform hover:scale-105"
+            >
+              Get Your Instant Quote
+            </button>
+          </div>
         </div>
       </div>
 

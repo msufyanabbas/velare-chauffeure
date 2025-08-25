@@ -1026,7 +1026,7 @@ const handleCalculateQuote = async () => {
   };
 
   return (
-    <div className="min-h-screen bg-white overflow-hidden">
+    <div  id='instantQuote' className="min-h-screen bg-white overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-dots-pattern opacity-30"></div>
       <div className="absolute inset-0 opacity-5">
