@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin, Clock, Award, Users } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin, Clock, Award, Users, Shield, Star } from 'lucide-react';
 
 const Footer = () => {
   const locations = [
@@ -86,21 +86,20 @@ const Footer = () => {
             <h3 className="text-lg font-semibold text-white mb-4">Service Areas</h3>
             <div className="space-y-3">
               {locations.map((location, index) => (
-                    <a 
-                    href={location.mapsUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-yellow-600 hover:text-yellow-400 transition-colors duration-300"
-                  >
-                <div key={index} className="flex items-center space-x-3 p-2 hover:bg-gray-800 rounded-md transition-colors duration-300">
-              
+                <a 
+                  key={index}
+                  href={location.mapsUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-yellow-600 hover:text-yellow-400 transition-colors duration-300"
+                >
+                  <div className="flex items-center space-x-3 p-2 hover:bg-gray-800 rounded-md transition-colors duration-300">
                     <MapPin size={18} />
-                  <div>
-                    <p className="text-white text-sm font-medium">{location.name}</p>
+                    <div>
+                      <p className="text-white text-sm font-medium">{location.name}</p>
+                    </div>
                   </div>
-                </div>
-                  </a>
-
+                </a>
               ))}
             </div>
           </div>
@@ -108,18 +107,28 @@ const Footer = () => {
 
         {/* Contact & Social Section */}
         <div className="border-t border-gray-800 mt-8 pt-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Contact Information */}
             <div>
               <h3 className="text-lg font-semibold text-white mb-4">Get In Touch</h3>
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
                   <Phone size={16} className="text-yellow-600 flex-shrink-0" />
-                  <p className="text-gray-300 text-sm">1300 650 677</p>
+                  <a 
+                    href="tel:1300650677" 
+                    className="text-gray-300 hover:text-yellow-600 transition-colors duration-300 text-sm"
+                  >
+                    1300 650 677
+                  </a>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Mail size={16} className="text-yellow-600 flex-shrink-0" />
-                  <p className="text-gray-300 text-sm">info@velarechauffeurs.com.au</p>
+                  <a 
+                    href="mailto:info@velarechauffeurs.com.au" 
+                    className="text-gray-300 hover:text-yellow-600 transition-colors duration-300 text-sm"
+                  >
+                    info@velarechauffeurs.com.au
+                  </a>
                 </div>
                 <div className="flex items-center space-x-3">
                   <MapPin size={16} className="text-yellow-600 flex-shrink-0" />
@@ -158,6 +167,44 @@ const Footer = () => {
                 <a href="https://x.com/VelareChauffeur" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-600 transition-colors duration-300">
                   <Twitter size={20} />
                 </a>
+              </div>
+            </div>
+
+            {/* Trust & Verification Badges */}
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4">Trust & Verification</h3>
+              <div className="space-y-4">
+                {/* HSP Verification Badge */}
+                <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 group cursor-pointer"
+                     title="Health, Safety & Protection Verified">
+                  <Shield size={24} className="text-white flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
+                  <div>
+                    <p className="text-white text-sm font-semibold">HSP Verified</p>
+                    <p className="text-blue-100 text-xs">Health, Safety & Protection</p>
+                  </div>
+                </div>
+
+                {/* TripAdvisor Badge */}
+                <a
+                  href="https://www.tripadvisor.com.au/Profile/velarec2025"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-3 p-3 bg-gradient-to-r from-green-600 to-green-700 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-300 group"
+                  title="View our TripAdvisor reviews"
+                >
+                  <Star size={24} className="text-white flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
+                  <div>
+                    <p className="text-white text-sm font-semibold">TripAdvisor</p>
+                    <p className="text-green-100 text-xs">Trusted Reviews</p>
+                  </div>
+                </a>
+
+                {/* Trust Message */}
+                <div className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-700">
+                  <p className="text-gray-300 text-xs leading-relaxed">
+                    Your safety and satisfaction are our top priorities. We're verified for health, safety, and protection standards.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
